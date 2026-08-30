@@ -13,7 +13,7 @@ class LLMClient:
             api_key = settings.llm_api_key if settings and settings.llm_api_key else os.getenv("GEMINI_API_KEY", "dummy")
             ollama_url = settings.ollama_base_url if settings and settings.ollama_base_url else os.getenv("OLLAMA_URL", "http://localhost:11434")
             
-            gemini_model = settings.llm_model if settings and settings.llm_model else "gemini-2.0-flash"
+            gemini_model = settings.llm_model if settings and settings.llm_model else "gemini-3.7-flash"
             ollama_model = settings.ollama_model if settings and settings.ollama_model else "llama3"
             
             if provider == "gemini":

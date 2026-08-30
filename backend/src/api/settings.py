@@ -12,9 +12,21 @@ import json
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
+SUPPORTED_GEMINI_MODELS = [
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash-lite"
+]
+SUPPORTED_OLLAMA_MODELS = ["llama3", "llama3.2", "mistral", "phi3"]
+
 class SettingsUpdate(BaseModel):
     provider: str
-    model: str = "gemini-2.0-flash"
+    model: str = "gemini-3.7-flash"
     gemini_api_key: str = ""
     ollama_base_url: str = ""
     ollama_model: str = "llama3"
@@ -34,27 +46,23 @@ async def update_settings(
         settings = TenantSettings(tenant_id=user.tenant_id)
         db.add(settings)
         
-    # Validate the model payload before setting
-    valid_gemini_models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash", "gemini-3.6-flash"]
-    valid_ollama_models = ["llama3", "mistral", "phi3", "llama3.2"]
-
     settings.llm_provider = payload.provider
-    if payload.model in valid_gemini_models:
+    
+    if payload.provider == "gemini":
+        if payload.model not in SUPPORTED_GEMINI_MODELS:
+            raise HTTPException(status_code=400, detail=f"Unsupported Gemini model: {payload.model}")
         settings.llm_model = payload.model
-    else:
-        # Default fallback
-        settings.llm_model = "gemini-2.0-flash"
+    elif payload.provider == "ollama":
+        if payload.ollama_model not in SUPPORTED_OLLAMA_MODELS:
+            raise HTTPException(status_code=400, detail=f"Unsupported Ollama model: {payload.ollama_model}")
+        settings.ollama_model = payload.ollama_model
+        settings.ollama_base_url = payload.ollama_base_url
         
     if payload.remove_key:
         settings.llm_api_key = None
     elif payload.provider == "gemini" and payload.gemini_api_key and not payload.gemini_api_key.startswith("••••"):
         encrypted = encrypt_dict({"key": payload.gemini_api_key})
         settings.llm_api_key = encrypted
-        
-    if payload.provider == "ollama":
-        settings.ollama_base_url = payload.ollama_base_url
-        if payload.ollama_model in valid_ollama_models:
-            settings.ollama_model = payload.ollama_model
         
     db.commit()
     return {"status": "success", "message": "Settings updated"}
@@ -83,7 +91,7 @@ async def get_settings(
     return {
         "configured": True,
         "provider": settings.llm_provider if settings else "gemini",
-        "model": settings.llm_model if settings and settings.llm_model else "gemini-2.0-flash",
+        "model": settings.llm_model if settings and settings.llm_model else "gemini-3.7-flash",
         "has_byok_key": has_byok,
         "gemini_api_key": masked_key,
         "ollama_base_url": settings.ollama_base_url if settings and settings.ollama_base_url else "http://localhost:11434",
@@ -104,7 +112,7 @@ async def test_llm_connection(
             settings = db.query(TenantSettings).filter(TenantSettings.tenant_id == user.tenant_id).first()
             provider = settings.llm_provider if settings else "gemini"
             if provider == "gemini":
-                model_used = settings.llm_model if settings and settings.llm_model else "gemini-2.0-flash"
+                model_used = settings.llm_model if settings and settings.llm_model else "gemini-3.7-flash"
             else:
                 model_used = settings.ollama_model if settings and settings.ollama_model else "llama3"
                 

@@ -167,6 +167,7 @@ async def register_log(
     except Exception as e:
         import traceback
         traceback.print_exc()
+        db.rollback()
         raise HTTPException(status_code=400, detail=f"Failed to process file: {str(e)}")
 
 class DbRegister(BaseModel):
@@ -184,8 +185,8 @@ async def register_postgres(
     connector = PostgresConnector(payload.connection_string)
     perms = connector.check_permissions()
     
-    if not perms.is_read_only and not perms.granted_scopes:
-        raise HTTPException(status_code=400, detail=f"Permission check failed: {perms.warnings}")
+    if not perms.is_read_only:
+        raise HTTPException(status_code=400, detail=f"Permission check failed: PostgreSQL connection must be read-only. {perms.warnings}")
         
     config = {"connection_string": payload.connection_string}
     new_source = DBSource(
@@ -259,6 +260,18 @@ async def list_sources(
     sources = db.query(DBSource).filter(DBSource.project_id == project.id).all()
     result = []
     for s in sources:
+        safe_config = {}
+        if s.config and "encrypted_data" in s.config:
+            try:
+                dec = decrypt_dict(s.config["encrypted_data"])
+                if s.type in ("github", "github_actions"):
+                    safe_config["repo_url"] = dec.get("repo_url")
+                elif s.type == "static_log":
+                    safe_config["filename"] = dec.get("filename")
+                    safe_config["size"] = dec.get("size")
+            except:
+                pass
+                
         result.append({
             "id": str(s.id),
             "type": s.type,
@@ -266,7 +279,8 @@ async def list_sources(
             "provider": s.provider,
             "name": s.name,
             "status": s.status,
-            "capabilities": s.capabilities
+            "capabilities": s.capabilities,
+            "config": safe_config
         })
     return result
 
@@ -309,7 +323,7 @@ async def test_source_connection(
         perms = connector.check_permissions()
         if source.type == "github" and perms.granted_scopes:
             return {"healthy": True, "message": "GitHub connection successful"}
-        elif source.type == "postgres" and (perms.is_read_only or perms.granted_scopes):
+        elif source.type == "postgres" and perms.is_read_only:
              return {"healthy": True, "message": "Postgres connection successful"}
         elif source.type == "mongodb" and perms.is_read_only:
              return {"healthy": True, "message": "MongoDB connection successful"}
@@ -322,7 +336,7 @@ async def get_readiness(
     db: Session = Depends(get_db),
     project: Project = Depends(get_current_project)
 ):
-    sources = db.query(DBSource).filter(DBSource.project_id == project.id).all()
+    sources = db.query(DBSource).filter(DBSource.project_id == project.id, DBSource.status == "connected").all()
     cats = [s.category for s in sources]
     
     has_code = "code" in cats

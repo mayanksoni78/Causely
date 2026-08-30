@@ -215,6 +215,7 @@ const ConnectSources = () => {
 
   const availableIntegrations = [
     { name: 'GitHub', type: 'github', category: 'code', icon: GitBranch, desc: 'Repository, commits, PRs, issues & workflow events' },
+    { name: 'GitHub Actions', type: 'github_actions', category: 'code', icon: Zap, desc: 'Workflow runs and deployment events' },
     
     { name: 'Grafana Loki', type: 'loki', category: 'logs', icon: Search, desc: 'Centralized log aggregation and search' },
     { name: 'Static Logs', type: 'static_log', category: 'logs', icon: FileText, desc: 'Upload .log, .txt, .json files for investigation' },
@@ -296,11 +297,10 @@ const ConnectSources = () => {
           <div>
             <h2 style={{ fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '1rem' }}>CODE & VERSION CONTROL</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1rem' }}>
-              {(() => {
-                const i = availableIntegrations.find(x => x.type === 'github')!;
+              {getIntegrationsByCategory('code').map(i => {
                 const src = sources.find(s => s.type === i.type);
                 return renderCard(i.type, i.name, i.desc, <i.icon size={24} />, !!src, src, src?.capabilities, i.comingSoon);
-              })()}
+              })}
             </div>
           </div>
 
@@ -418,6 +418,26 @@ const ConnectSources = () => {
                   <input type="text" className="input-field" placeholder="Repository Owner/Name (e.g. mayanksoni78/Car_Rental)" onChange={e => setFormData({...formData, repo_url: e.target.value})} />
                   <input type="password" className="input-field" placeholder="Personal Access Token (PAT)" onChange={e => setFormData({...formData, token: e.target.value})} />
                   <p className="text-secondary" style={{fontSize: '0.8rem'}}>Provide a Classic PAT with repo read scope, or a Fine-Grained PAT.</p>
+                </>
+              )}
+              {showModal === 'github_actions' && (
+                <>
+                  <input type="text" className="input-field" placeholder="Repository Owner/Name (e.g. mayanksoni78/Car_Rental)" onChange={e => setFormData({...formData, repo_url: e.target.value})} />
+                  <input type="password" className="input-field" placeholder="Personal Access Token (PAT)" onChange={e => setFormData({...formData, token: e.target.value})} />
+                  <p className="text-secondary" style={{fontSize: '0.8rem'}}>Provide a PAT with actions read scope.</p>
+                </>
+              )}
+              {showModal === 'stripe' && (
+                <>
+                  <input type="password" className="input-field" placeholder="Stripe Restricted API Key" onChange={e => setFormData({...formData, api_key: e.target.value})} />
+                  <p className="text-secondary" style={{fontSize: '0.8rem'}}>Create a restricted key with read-only permissions.</p>
+                </>
+              )}
+              {showModal === 'auth0' && (
+                <>
+                  <input type="text" className="input-field" placeholder="Auth0 Domain (e.g. tenant.auth0.com)" onChange={e => setFormData({...formData, domain: e.target.value})} />
+                  <input type="text" className="input-field" placeholder="Client ID" onChange={e => setFormData({...formData, client_id: e.target.value})} />
+                  <input type="password" className="input-field" placeholder="Client Secret" onChange={e => setFormData({...formData, client_secret: e.target.value})} />
                 </>
               )}
               {showModal === 'postgres' && (

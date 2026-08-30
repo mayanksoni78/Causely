@@ -177,6 +177,9 @@ export const createSource = async (type: string, data: any) => {
   }
   if (type === 'razorpay') return api.post('/sources/razorpay', data);
   if (type === 'generic_rest') return api.post('/sources/generic-rest', data);
+  if (type === 'stripe') return api.post('/sources/stripe', data);
+  if (type === 'auth0') return api.post('/sources/auth0', data);
+  if (type === 'github_actions') return api.post('/sources/github-actions', data);
   throw new Error('Unknown source type');
 };
 

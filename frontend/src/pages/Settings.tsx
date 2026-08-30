@@ -2,9 +2,27 @@ import { useState, useEffect } from 'react';
 import { getSettings, updateSettings, testLlmConnection, clearTenantData, getUsage } from '../lib/api';
 import { CheckCircle2, XCircle, Shield, AlertTriangle, Database, Lock, Users, Activity, Trash2, Key, Server } from 'lucide-react';
 
+const GEMINI_MODELS = [
+  { id: "gemini-3.7-flash", name: "Gemini 3.7 Flash (Default)" },
+  { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash" },
+  { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
+  { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash Lite" },
+  { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash Lite" },
+  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
+  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" },
+  { id: "gemini-2.5-flash-lite", name: "Gemini 2.5 Flash-Lite" }
+];
+
+const OLLAMA_MODELS = [
+  { id: "llama3", name: "llama3 (Default)" },
+  { id: "llama3.2", name: "llama3.2" },
+  { id: "mistral", name: "mistral" },
+  { id: "phi3", name: "phi3" }
+];
+
 const Settings = () => {
   const [provider, setProvider] = useState('gemini');
-  const [model, setModel] = useState('gemini-2.0-flash');
+  const [model, setModel] = useState('gemini-3.7-flash');
   const [geminiKey, setGeminiKey] = useState('');
   const [hasByokKey, setHasByokKey] = useState(false);
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434');
@@ -142,10 +160,9 @@ const Settings = () => {
                 <div>
                   <label className="text-secondary" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Model</label>
                   <select className="input-field" value={model} onChange={e => setModel(e.target.value)}>
-                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                    <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
+                    {GEMINI_MODELS.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
                   </select>
                 </div>
                 
@@ -192,10 +209,9 @@ const Settings = () => {
                 <div>
                   <label className="text-secondary" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Ollama Model</label>
                   <select className="input-field" value={ollamaModel} onChange={e => setOllamaModel(e.target.value)}>
-                    <option value="llama3">llama3</option>
-                    <option value="llama3.2">llama3.2</option>
-                    <option value="mistral">mistral</option>
-                    <option value="phi3">phi3</option>
+                    {OLLAMA_MODELS.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
