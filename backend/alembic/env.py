@@ -11,7 +11,7 @@ from alembic import context
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import our models
-from src.core.database import Base, db_url
+from src.core.database import Base, DATABASE_URL
 from src.models import user, domain
 
 config = context.config
@@ -22,9 +22,9 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 def get_url():
-    if isinstance(db_url, str):
-        return db_url
-    return db_url.render_as_string(hide_password=False)
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is not configured.")
+    return DATABASE_URL
 
 def run_migrations_offline() -> None:
     url = get_url()

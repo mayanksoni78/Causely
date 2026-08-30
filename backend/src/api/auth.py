@@ -65,19 +65,25 @@ def signup(req: SignupRequest, response: Response, db: Session = Depends(get_db)
     if db.query(DBUser).filter(DBUser.email == email).first():
         raise HTTPException(status_code=409, detail="An account with this email already exists")
 
-    new_tenant = Tenant(name=f"{req.name}'s Workspace")
-    db.add(new_tenant)
-    db.flush()
+    try:
+        new_tenant = Tenant(name=f"{req.name}'s Workspace")
+        db.add(new_tenant)
+        db.flush()
 
-    new_user = DBUser(
-        tenant_id=new_tenant.id,
-        email=email,
-        password_hash=hash_password(req.password),
-        name=req.name.strip()
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+        new_user = DBUser(
+            tenant_id=new_tenant.id,
+            email=email,
+            password_hash=hash_password(req.password),
+            name=req.name.strip()
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+    except Exception as e:
+        db.rollback()
+        # Log actual error to backend console
+        print(f"Signup Database Error: {e}")
+        raise HTTPException(status_code=500, detail="Registration failed due to a server error")
 
     token = create_access_token(str(new_user.id), str(new_tenant.id), new_user.email)
     set_auth_cookie(response, token)

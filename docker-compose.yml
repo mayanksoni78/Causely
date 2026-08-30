@@ -1,17 +1,21 @@
 
 
 services:
-  db:
-    image: ankane/pgvector:latest
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: ai_incident_investigator
-    ports:
-      - "5432:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    restart: unless-stopped
+  # OPTIONAL: Local PostgreSQL database (e.g. with pgvector).
+  # NOTE: Do NOT use this as the application database.
+  # The application database MUST be configured via DATABASE_URL pointing to Supabase PostgreSQL.
+  # This container is kept only if you need a local pg database for testing outside of the application.
+  # db:
+  #   image: ankane/pgvector:latest
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: ai_incident_investigator
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
 
   # Optional local LLM for offline dev (uncomment or use --profile local-llm to start)
   # ollama:
