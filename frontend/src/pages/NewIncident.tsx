@@ -35,13 +35,15 @@ const NewIncident = () => {
     } catch (error: unknown) {
       console.error(error);
       let msg = "Investigation failed. Please check the connected sources and try again.";
-      if (error instanceof Error) {
-        const anyErr = error as any;
-        if (anyErr.response?.data?.detail) {
-          msg = anyErr.response.data.detail;
-        } else if (error.message) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { detail?: string } } };
+        if (axiosError.response?.data?.detail) {
+          msg = axiosError.response.data.detail;
+        } else if (error instanceof Error) {
           msg = error.message;
         }
+      } else if (error instanceof Error) {
+        msg = error.message;
       }
       setErrorMessage(msg);
     } finally {

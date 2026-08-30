@@ -42,7 +42,7 @@ export interface Incident {
   description: string;
   affectedService?: string;
   timeframe: { from: string; to: string };
-  status: 'open' | 'queued' | 'investigating' | 'failed' | 'insufficient_evidence' | 'resolved' | 'completed';
+  status: 'queued' | 'investigating' | 'failed' | 'insufficient_evidence' | 'completed';
   createdAt: string;
   hypotheses: Hypothesis[];
   evidence: EvidenceChunk[];
@@ -62,4 +62,13 @@ export interface Source {
   status: 'connected' | 'disconnected' | 'error' | 'coming_soon' | 'connecting';
   config?: Record<string, any>;
   capabilities?: string[];
+}
+
+export interface DashboardStats {
+  total_incidents: number;
+  completed_investigations: number;
+  active: number;
+  avg_confidence: number;
+  avg_confidence_level: string;
+  sources_connected: number;
 }

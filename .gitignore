@@ -1,0 +1,15 @@
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+build/
+.vite/

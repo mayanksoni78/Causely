@@ -1,15 +1,16 @@
-import { useState, useEffect, useRef, DragEvent } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import type { DragEvent as ReactDragEvent } from 'react';
 import { getSources, createSource, getReadiness, deleteSource, testConnection } from '../lib/api';
 import type { Source } from '../lib/types';
 import { GitBranch, Database, FileText, Search, Activity, Zap, Cloud, Plus, History, Shield, UploadCloud, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 const ConnectSources = () => {
   const [sources, setSources] = useState<Source[]>([]);
-  const [readiness, setReadiness] = useState<any>(null);
+  const [readiness, setReadiness] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(true);
   
   const [showModal, setShowModal] = useState<string | null>(null);
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<Record<string, any>>({});
   const [submitError, setSubmitError] = useState('');
   const [submitLoading, setSubmitLoading] = useState(false);
   const [addIntegrationModal, setAddIntegrationModal] = useState(false);
@@ -21,12 +22,18 @@ const ConnectSources = () => {
 
   const [testingId, setTestingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [actionFeedback, setActionFeedback] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   const refreshData = () => {
     setLoading(true);
+    setPageError(null);
     Promise.all([getSources(), getReadiness()]).then(([srcs, readys]) => {
       setSources(srcs);
       setReadiness(readys);
+      setLoading(false);
+    }).catch(e => {
+      setPageError('Failed to load sources or readiness data.');
       setLoading(false);
     });
   };
@@ -50,8 +57,8 @@ const ConnectSources = () => {
       }
       
       if (type === 'static_log') {
-        payload.onUploadProgress = (progressEvent: any) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        payload.onUploadProgress = (progressEvent: { loaded: number, total?: number }) => {
+          const percentCompleted = progressEvent.total ? Math.round((progressEvent.loaded * 100) / progressEvent.total) : 0;
           setUploadProgress(percentCompleted);
         };
       }
@@ -62,7 +69,8 @@ const ConnectSources = () => {
       setFormData({});
       setUploadProgress(0);
       refreshData();
-    } catch (e: any) {
+    } catch (error: unknown) {
+      const e = error as any;
       setSubmitError(e?.response?.data?.detail || e.message);
     }
     setSubmitLoading(false);
@@ -73,8 +81,9 @@ const ConnectSources = () => {
     try {
       await deleteSource(id);
       refreshData();
-    } catch (e: any) {
-      alert(e?.response?.data?.detail || e.message);
+    } catch (error: unknown) {
+      const e = error as any;
+      setActionFeedback({ message: e?.response?.data?.detail || e?.message || "Action failed", type: "error" });
     }
     setDeletingId(null);
   };
@@ -85,7 +94,8 @@ const ConnectSources = () => {
       await testConnection(id);
       alert('✓ Connection successful!');
       refreshData();
-    } catch (e: any) {
+    } catch (error: unknown) {
+      const e = error as any;
       alert('✗ Connection failed: ' + (e?.response?.data?.detail || e.message));
     }
     setTestingId(null);
@@ -139,6 +149,9 @@ const ConnectSources = () => {
     
     // Normalize connecting/error/etc
     let statusClass = displayStatus.toLowerCase().replace(' ', '_');
+    if (isConfigured && sourceInfo) {
+      statusClass = sourceInfo.status;
+    }
     if (isConfigured && sourceInfo && sourceInfo.status === 'connected') {
         statusClass = 'connected';
     }
@@ -213,7 +226,17 @@ const ConnectSources = () => {
     return availableIntegrations.filter(i => i.category === category);
   };
 
-  const availableIntegrations = [
+  interface IntegrationTemplate {
+    name: string;
+    type: string;
+    category: string;
+    icon: any;
+    desc: string;
+    comingSoon?: boolean;
+    builtIn?: boolean;
+  }
+
+  const availableIntegrations: IntegrationTemplate[] = [
     { name: 'GitHub', type: 'github', category: 'code', icon: GitBranch, desc: 'Repository, commits, PRs, issues & workflow events' },
     { name: 'GitHub Actions', type: 'github_actions', category: 'code', icon: Zap, desc: 'Workflow runs and deployment events' },
     

@@ -148,7 +148,7 @@ async def get_dashboard_stats(
     if completed_with_score:
         avg_conf = sum([inc.confidence_score for inc in completed_with_score]) / len(completed_with_score)
         
-    sources_count = db.query(Source).filter(Source.project_id == project.id).count()
+    sources_count = db.query(Source).filter(Source.project_id == project.id, Source.status == "connected").count()
     
     # Simple logic for text representation of confidence
     avg_conf_level = "None"
@@ -162,7 +162,7 @@ async def get_dashboard_stats(
     
     return {
         "total_incidents": total,
-        "resolved": resolved,
+        "completed_investigations": resolved,
         "active": active,
         "avg_confidence": avg_conf,
         "avg_confidence_level": avg_conf_level,

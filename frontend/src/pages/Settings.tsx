@@ -39,17 +39,21 @@ const Settings = () => {
   
   const [usage, setUsage] = useState({ daily_used: 0, daily_limit: 10, active_used: 0, active_limit: 2 });
   const [loading, setLoading] = useState(true);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   const fetchSettings = async () => {
     try {
+      setSettingsError(null);
       const [data, usageData] = await Promise.all([getSettings(), getUsage()]);
       if (data.provider) setProvider(data.provider);
       if (data.model) setModel(data.model);
-      if (data.gemini_api_key) setGeminiKey(data.gemini_api_key);
+      setGeminiKey("");
       if (data.ollama_base_url) setOllamaUrl(data.ollama_base_url);
       if (data.ollama_model) setOllamaModel(data.ollama_model);
       setHasByokKey(!!data.has_byok_key);
       setUsage(usageData);
+    } catch (error: unknown) {
+      setSettingsError('Unable to load settings. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -73,7 +77,8 @@ const Settings = () => {
       });
       setSaveMessage({type: 'success', text: "Settings saved successfully."});
       await fetchSettings();
-    } catch (e: any) {
+    } catch (error: unknown) {
+      const e = error as any;
       setSaveMessage({type: 'error', text: `Failed to save settings: ${e?.response?.data?.detail || e.message}`});
     }
     setIsSaving(false);
@@ -91,7 +96,8 @@ const Settings = () => {
         time: res.response_time,
         testedModel: res.model
       });
-    } catch (e: any) {
+    } catch (error: unknown) {
+      const e = error as any;
       setTestResult({ status: 'error', message: e?.response?.data?.detail || e.message });
     }
     setIsTesting(false);
@@ -106,8 +112,9 @@ const Settings = () => {
       setShowClearModal(false);
       setClearConfirm('');
       window.location.reload();
-    } catch (e: any) {
-      alert(`Failed to clear data: ${e?.response?.data?.detail || e.message}`);
+    } catch (error: unknown) {
+      const e = error as any;
+      setSaveMessage({type: 'error', text: `Failed to clear data: ${e?.response?.data?.detail || e?.message}`});
     }
     setIsClearing(false);
   };
@@ -173,7 +180,7 @@ const Settings = () => {
                       type="password" 
                       className="input-field" 
                       style={{ flex: 1 }}
-                      placeholder={hasByokKey ? geminiKey : "Leave blank to use the Causely configured provider."}
+                      placeholder={hasByokKey ? "API key configured (enter a new key to change)" : "Enter a new Gemini API key"}
                       value={hasByokKey && geminiKey.startsWith('••••') ? geminiKey : geminiKey}
                       onChange={e => setGeminiKey(e.target.value)}
                     />

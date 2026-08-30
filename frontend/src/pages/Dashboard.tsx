@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getIncidents, getDashboardStats } from '../lib/api';
 import { AlertCircle, CheckCircle, Database, Activity } from 'lucide-react';
-import type { Incident } from '../lib/types';
+import type { Incident, DashboardStats } from '../lib/types';
 
 const Dashboard = () => {
   const { data: stats, isLoading: statsLoading, isError: statsError } = useQuery({
@@ -11,7 +11,7 @@ const Dashboard = () => {
     refetchInterval: (query) => {
       // We don't have direct access to incidents here easily without reading cache, 
       // but stats returns 'active'. If active > 0, we can poll stats.
-      const data = query.state.data as any;
+      const data = query.state.data as DashboardStats | undefined;
       if (!data) return 5000;
       return data.active > 0 ? 5000 : false;
     }
@@ -23,7 +23,7 @@ const Dashboard = () => {
     refetchInterval: (query) => {
       const data = query.state.data as Incident[];
       if (!data) return 5000;
-      const hasActive = data.some(inc => inc.status === 'investigating' || inc.status === 'queued' || inc.status === 'open');
+      const hasActive = data.some(inc => inc.status === 'investigating' || inc.status === 'queued');
       return hasActive ? 5000 : false;
     }
   });
@@ -84,7 +84,7 @@ const Dashboard = () => {
               <span>Completed Investigations</span>
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 700 }}>
-              {statsError ? <span style={{fontSize: '1rem', color: 'var(--status-failed)'}}>Error</span> : statsLoading ? '...' : stats?.resolved || 0}
+              {statsError ? <span style={{fontSize: '1rem', color: 'var(--status-failed)'}}>Error</span> : statsLoading ? '...' : stats?.completed_investigations || 0}
             </div>
           </div>
           <div className="card">

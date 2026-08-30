@@ -1,12 +1,18 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getIncidents } from '../lib/api';
+import type { Incident } from '../lib/types';
 
 const History = () => {
-  const { data: incidents = [], isLoading } = useQuery({
+  const { data: incidents = [], isLoading, isError } = useQuery({
     queryKey: ['incidents'],
     queryFn: getIncidents,
-    refetchInterval: 5000,
+    refetchInterval: (query) => {
+      const data = query.state.data as Incident[];
+      if (!data) return 5000;
+      const hasActive = data.some(inc => inc.status === 'investigating' || inc.status === 'queued');
+      return hasActive ? 5000 : false;
+    }
   });
 
   const formatDate = (dateString?: string) => {
@@ -21,12 +27,12 @@ const History = () => {
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case 'completed': return 'high';
-      case 'investigating': return 'medium';
-      case 'failed': return 'low';
+      case 'completed': return 'completed';
+      case 'investigating': return 'investigating';
+      case 'failed': return 'failed';
       case 'insufficient_evidence': return 'insufficient';
-      case 'queued': return 'medium';
-      default: return 'medium';
+      case 'queued': return 'queued';
+      default: return 'queued';
     }
   };
 
@@ -44,11 +50,16 @@ const History = () => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <header className="page-header">
         <h1 className="page-title">Investigation History</h1>
-        <p className="page-subtitle">Past incidents and their resolved root causes</p>
+        <p className="page-subtitle">Past investigations and their findings</p>
       </header>
       
       <div className="page-content">
         <div className="table-wrapper">
+          {isError ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--status-failed)' }}>
+              Unable to load investigation history. Please try refreshing.
+            </div>
+          ) : (
           <table>
             <thead>
               <tr>
@@ -65,22 +76,22 @@ const History = () => {
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>Loading...</td>
                 </tr>
-              ) : incidents.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="empty-state">
-                    No history available.
-                  </td>
-                </tr>
-              ) : (
-                incidents.map((incident: any) => (
-                  <tr key={incident.id}>
-                    <td className="mono">{incident.id.slice(0, 8)}</td>
-                    <td>{incident.title}</td>
-                    <td>
-                      <span className={`badge ${getStatusBadgeClass(incident.status)}`}>
-                        {incident.status.replace('_', ' ').toUpperCase()}
-                      </span>
+                ) : incidents.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="empty-state">
+                      No history available.
                     </td>
+                  </tr>
+                ) : (
+                  incidents.map((incident: Incident) => (
+                    <tr key={incident.id}>
+                      <td className="mono">{incident.id.slice(0, 8)}</td>
+                      <td>{incident.title}</td>
+                      <td>
+                        <span className={`badge ${getStatusBadgeClass(incident.status)}`}>
+                          {incident.status.replace('_', ' ').toUpperCase()}
+                        </span>
+                      </td>
                       <td>
                         {incident.confidence_score !== undefined && incident.confidence_score !== null ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -98,18 +109,19 @@ const History = () => {
                             </span>
                           </div>
                         ) : (
-                          <span style={{ color: 'var(--text-muted)' }}>N/A</span>
+                          <span style={{ color: 'var(--text-muted)' }}>—</span>
                         )}
                       </td>
-                    <td>{formatDate(incident.createdAt)}</td>
-                    <td>
-                      <Link to={`/incidents/${incident.id}`} style={{ color: 'var(--accent)' }}>View</Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                      <td>{formatDate(incident.createdAt)}</td>
+                      <td>
+                        <Link to={`/incidents/${incident.id}`} style={{ color: 'var(--accent)' }}>View</Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
