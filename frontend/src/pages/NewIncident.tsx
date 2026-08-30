@@ -7,12 +7,13 @@ import { CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react';
 const NewIncident = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: ''
   });
 
-  const { data: readiness, isLoading: readinessLoading } = useQuery({
+  const { data: readiness, isLoading: readinessLoading, isError: readinessError } = useQuery({
     queryKey: ['readiness'],
     queryFn: getReadiness
   });
@@ -20,20 +21,29 @@ const NewIncident = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage(null);
     try {
       const res = await createIncident({
         title: formData.title,
-        description: formData.description,
-        status: 'investigating'
+        description: formData.description
       });
       if (res && res.id) {
         navigate(`/incidents/${res.id}`);
       } else {
-        alert("Failed to create incident. Check console for details.");
+        setErrorMessage("Failed to create incident. Please try again.");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      alert("Failed to create incident: " + (error.message || "Unknown error"));
+      let msg = "Investigation failed. Please check the connected sources and try again.";
+      if (error instanceof Error) {
+        const anyErr = error as any;
+        if (anyErr.response?.data?.detail) {
+          msg = anyErr.response.data.detail;
+        } else if (error.message) {
+          msg = error.message;
+        }
+      }
+      setErrorMessage(msg);
     } finally {
       setLoading(false);
     }
@@ -60,6 +70,16 @@ const NewIncident = () => {
       
       <div className="page-content" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
         <div className="card" style={{ flex: 2 }}>
+          {errorMessage && (
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--status-failed)', borderRadius: '0.375rem', display: 'flex', gap: '0.75rem', color: 'var(--status-failed)', alignItems: 'flex-start' }}>
+              <AlertTriangle size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <h4 style={{ fontWeight: 600, marginBottom: '0.25rem' }}>Failed to start investigation</h4>
+                <p style={{ fontSize: '0.9rem' }}>{errorMessage}</p>
+              </div>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit}>
             <div className="input-group">
               <label className="input-label" htmlFor="title">Incident Title</label>
@@ -105,6 +125,10 @@ const NewIncident = () => {
           <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Investigation Readiness</h3>
           {readinessLoading ? (
             <div style={{ color: 'var(--text-secondary)' }}>Calculating readiness...</div>
+          ) : readinessError ? (
+            <div style={{ color: 'var(--status-failed)', padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderRadius: '0.375rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              Unable to calculate investigation readiness. Please refresh to try again.
+            </div>
           ) : (
             <>
               <div style={{ marginBottom: '1.5rem' }}>
@@ -120,12 +144,13 @@ const NewIncident = () => {
                 {renderReadinessItem('Application Logs', readiness?.logs)}
                 {renderReadinessItem('Database Schemas', readiness?.database)}
                 {renderReadinessItem('Historical Incidents', readiness?.history)}
+                {renderReadinessItem('External Services', readiness?.external_services)}
               </div>
 
               {(readiness?.score || 0) < 50 && (
                 <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: 'rgba(245, 158, 11, 0.1)', border: '1px solid var(--status-medium)', borderRadius: '0.375rem', display: 'flex', gap: '0.5rem', color: 'var(--status-medium)', fontSize: '0.875rem' }}>
                   <AlertTriangle size={16} style={{ flexShrink: 0 }} />
-                  <span>Connect more sources for higher confidence investigations.</span>
+                  <span>Limited evidence coverage may reduce investigation confidence. Connect additional sources for better results.</span>
                 </div>
               )}
             </>

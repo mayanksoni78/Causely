@@ -134,7 +134,7 @@ export const getIncident = async (id: string): Promise<Incident | null> => {
   }
 };
 
-export const createIncident = async (data: Partial<Incident>): Promise<Incident> => {
+export const createIncident = async (data: { title?: string; description: string }): Promise<Incident> => {
   const response = await api.post('/incidents', data);
   return response.data;
 };

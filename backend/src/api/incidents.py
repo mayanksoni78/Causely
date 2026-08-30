@@ -42,7 +42,7 @@ def run_investigation_sync(incident_id: str, tenant_id: str, project_id: str, de
             final_state["status"] = "completed"
         except Exception as e:
             final_state = initial_state
-            final_state["final_report"] = {"report": f"Investigation failed: {str(e)}"}
+            print(f"Server-side investigation error: {e}"); final_state["final_report"] = {"report": "Investigation failed. Please check the connected sources and try again."}
             final_state["status"] = "failed"
             
         # Update incident in DB
