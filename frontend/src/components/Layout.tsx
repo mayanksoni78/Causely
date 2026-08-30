@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Home, Plus, List, Plug, Settings, Activity, LogOut, User, Sun, Moon, ChevronDown, Users, Check, Hexagon } from 'lucide-react';
 import { useAuth } from '../lib/auth';
@@ -124,7 +124,7 @@ const Layout = () => {
                   <div style={{ borderTop: '1px solid var(--border-color)', margin: '4px 0' }} />
                   
                   <button 
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }} 
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 400 }} 
                     onClick={() => { setProjectSwitcherOpen(false); setCreateProjectModalOpen(true); }}
                     onMouseOver={(e) => e.currentTarget.style.background = 'var(--bg-surface)'}
                     onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
@@ -134,7 +134,7 @@ const Layout = () => {
                   
                   {currentProject?.role === 'OWNER' && (
                     <button 
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }} 
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 400 }} 
                       onClick={() => { setProjectSwitcherOpen(false); setInviteModalOpen(true); }}
                       onMouseOver={(e) => e.currentTarget.style.background = 'var(--bg-surface)'}
                       onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
@@ -145,7 +145,7 @@ const Layout = () => {
                   
                   <NavLink 
                     to="/settings" 
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', textDecoration: 'none' }} 
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 400 }} 
                     onClick={() => setProjectSwitcherOpen(false)}
                     onMouseOver={(e) => e.currentTarget.style.background = 'var(--bg-surface)'}
                     onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}

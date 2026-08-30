@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -130,6 +130,9 @@ def update_project(
     project: Project = Depends(require_role(["OWNER", "ADMIN"])), 
     db: Session = Depends(get_db)
 ):
+    if str(project.id) != project_id:
+        raise HTTPException(status_code=403, detail="Project ID mismatch")
+        
     if req.name is not None:
         project.name = req.name
     if req.description is not None:
@@ -152,12 +155,18 @@ def update_project(
 
 @router.delete("/{project_id}")
 def delete_project(project_id: str, project: Project = Depends(require_role(["OWNER"])), db: Session = Depends(get_db)):
+    if str(project.id) != project_id:
+        raise HTTPException(status_code=403, detail="Project ID mismatch")
+        
     db.delete(project)
     db.commit()
     return {"status": "deleted"}
 
 @router.get("/{project_id}/members", response_model=List[ProjectMemberResponse])
 def get_project_members(project_id: str, project: Project = Depends(get_current_project), db: Session = Depends(get_db)):
+    if str(project.id) != project_id:
+        raise HTTPException(status_code=403, detail="Project ID mismatch")
+        
     members = db.query(ProjectMember).filter(ProjectMember.project_id == project.id).all()
     
     res = []
@@ -189,6 +198,9 @@ def invite_member(
     user: DBUser = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    if str(project.id) != project_id:
+        raise HTTPException(status_code=403, detail="Project ID mismatch")
+        
     if req.role not in ["ADMIN", "MEMBER"]:
         raise HTTPException(status_code=400, detail="Invalid role")
         
@@ -236,6 +248,9 @@ def update_member_role(
     project: Project = Depends(require_role(["OWNER"])),
     db: Session = Depends(get_db)
 ):
+    if str(project.id) != project_id:
+        raise HTTPException(status_code=403, detail="Project ID mismatch")
+        
     if req.role not in ["OWNER", "ADMIN", "MEMBER"]:
         raise HTTPException(status_code=400, detail="Invalid role")
         
@@ -255,6 +270,9 @@ def remove_member(
     user: DBUser = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    if str(project.id) != project_id:
+        raise HTTPException(status_code=403, detail="Project ID mismatch")
+        
     member = db.query(ProjectMember).filter(ProjectMember.id == member_id, ProjectMember.project_id == project.id).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
