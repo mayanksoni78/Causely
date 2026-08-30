@@ -1,0 +1,130 @@
+ai-incident-investigator-v2/
+├── .env.example
+├── .github
+│   └── workflows
+│       └── ci.yml
+├── README.md
+├── auth_before.png
+├── auth_filled.png
+├── backend
+│   ├── .env
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── .pytest_cache
+│   │   ├── .gitignore
+│   │   ├── CACHEDIR.TAG
+│   │   ├── README.md
+│   │   └── v
+│   │       └── cache
+│   │           └── nodeids
+│   ├── README.md
+│   ├── alembic
+│   │   ├── README
+│   │   ├── env.py
+│   │   ├── script.py.mako
+│   │   └── versions
+│   │       └── 9f3eb31047b3_add_multi_project_architecture.py
+│   ├── alembic.ini
+│   ├── pyproject.toml
+│   ├── src
+│   │   ├── api
+│   │   │   ├── approvals.py
+│   │   │   ├── auth.py
+│   │   │   ├── incidents.py
+│   │   │   ├── projects.py
+│   │   │   ├── settings.py
+│   │   │   ├── sources.py
+│   │   │   └── sources_extra.py
+│   │   ├── connectors
+│   │   │   ├── auth0.py
+│   │   │   ├── base.py
+│   │   │   ├── external
+│   │   │   │   └── razorpay.py
+│   │   │   ├── generic_rest.py
+│   │   │   ├── github.py
+│   │   │   ├── github_actions.py
+│   │   │   ├── loki.py
+│   │   │   ├── mongodb.py
+│   │   │   ├── postgres.py
+│   │   │   ├── registry.py
+│   │   │   ├── static_log.py
+│   │   │   └── stripe.py
+│   │   ├── core
+│   │   │   ├── auth.py
+│   │   │   ├── database.py
+│   │   │   └── security.py
+│   │   ├── eval
+│   │   │   ├── dataset.json
+│   │   │   └── run_eval.py
+│   │   ├── jobs
+│   │   ├── llm
+│   │   │   ├── client.py
+│   │   │   └── prompts
+│   │   │       ├── hypothesis_generation.txt
+│   │   │       ├── synthesis.txt
+│   │   │       └── timeline.txt
+│   │   ├── main.py
+│   │   ├── models
+│   │   │   ├── domain.py
+│   │   │   └── user.py
+│   │   ├── observability
+│   │   │   └── tracer.py
+│   │   ├── pipeline
+│   │   │   ├── graph.py
+│   │   │   ├── nodes.py
+│   │   │   └── state.py
+│   │   └── retrieval
+│   │       ├── chunker.py
+│   │       ├── embeddings.py
+│   │       ├── indexer.py
+│   │       └── reranker.py
+│   └── tests
+│       └── test_health.py
+├── dashboard_after_login.png
+├── docker-compose.yml
+├── frontend
+│   ├── .env.local
+│   ├── .gitignore
+│   ├── .oxlintrc.json
+│   ├── README.md
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── public
+│   │   ├── favicon.svg
+│   │   └── icons.svg
+│   ├── src
+│   │   ├── App.tsx
+│   │   ├── components
+│   │   │   ├── Layout.tsx
+│   │   │   └── ProjectSettings.tsx
+│   │   ├── contexts
+│   │   │   └── ProjectContext.tsx
+│   │   ├── index.css
+│   │   ├── lib
+│   │   │   ├── api.ts
+│   │   │   ├── auth.tsx
+│   │   │   └── types.ts
+│   │   ├── main.tsx
+│   │   └── pages
+│   │       ├── AcceptInvitation.tsx
+│   │       ├── ConnectSources.tsx
+│   │       ├── Dashboard.tsx
+│   │       ├── History.tsx
+│   │       ├── InvestigationView.tsx
+│   │       ├── Login.tsx
+│   │       ├── NewIncident.tsx
+│   │       └── Settings.tsx
+│   ├── tsconfig.app.json
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   └── vite.config.ts
+├── generate_tree.py
+├── patch_css.py
+├── patch_index.py
+├── project_tree.txt
+├── recover.py
+├── test_csrf.py
+├── test_ui.py
+├── update_dashboard.py
+└── update_theme.py

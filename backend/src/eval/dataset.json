@@ -1,0 +1,52 @@
+[
+  {
+    "id": "eval_1",
+    "description": "App crashes on login page with 500 error when submitting the form.",
+    "expected_keywords": ["login", "auth", "500"]
+  },
+  {
+    "id": "eval_2",
+    "description": "Database connection timeout during car booking process.",
+    "expected_keywords": ["booking", "database", "timeout"]
+  },
+  {
+    "id": "eval_3",
+    "description": "User profile image fails to upload, showing 'File too large' error in console.",
+    "expected_keywords": ["upload", "image", "size"]
+  },
+  {
+    "id": "eval_4",
+    "description": "Payment gateway returns 401 Unauthorized during checkout.",
+    "expected_keywords": ["payment", "checkout", "401", "unauthorized"]
+  },
+  {
+    "id": "eval_5",
+    "description": "Search function returns empty array even when cars are available.",
+    "expected_keywords": ["search", "empty", "cars"]
+  },
+  {
+    "id": "eval_6",
+    "description": "Email verification link is broken and gives a 404 page.",
+    "expected_keywords": ["email", "verification", "404"]
+  },
+  {
+    "id": "eval_7",
+    "description": "Admin dashboard is very slow to load, taking over 10 seconds.",
+    "expected_keywords": ["admin", "dashboard", "slow", "performance"]
+  },
+  {
+    "id": "eval_8",
+    "description": "Car rental price calculation is incorrect when adding discount code.",
+    "expected_keywords": ["price", "discount", "calculation"]
+  },
+  {
+    "id": "eval_9",
+    "description": "Session expires randomly while the user is actively filling out the rental form.",
+    "expected_keywords": ["session", "expire", "form"]
+  },
+  {
+    "id": "eval_10",
+    "description": "The date picker allows users to select dates in the past for a rental.",
+    "expected_keywords": ["date", "picker", "past"]
+  }
+]

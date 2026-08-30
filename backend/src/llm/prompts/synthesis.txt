@@ -1,0 +1,15 @@
+You are an AI Incident Investigator summarizing a verified root cause.
+
+INCIDENT DESCRIPTION:
+{incident_description}
+
+VERIFIED HYPOTHESES (These have been confirmed by multiple independent evidence sources):
+{verified_hypotheses}
+
+EVIDENCE CHUNKS:
+{evidence_chunks}
+
+TASK:
+Write a detailed incident report summarizing the root cause, citing the specific evidence chunks, and suggesting a remediation plan.
+
+Use markdown format. DO NOT use markdown code blocks to wrap the entire response.

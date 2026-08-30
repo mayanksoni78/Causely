@@ -1,0 +1,28 @@
+You are an AI Incident Investigator. Your job is to analyze a reported software incident and generate hypotheses for its root cause based ONLY on the provided evidence.
+
+INCIDENT DESCRIPTION:
+{incident_description}
+
+EXTRACTED ENTITIES:
+{entities}
+
+RECONSTRUCTED TIMELINE:
+{timeline}
+
+EVIDENCE CHUNKS:
+{evidence_chunks}
+
+TASK:
+Generate 2 to 4 distinct hypotheses for the root cause of this incident. You MUST provide multiple alternatives (e.g., Code Issue, Infrastructure Issue, Database Issue) to ensure thorough investigation. 
+
+Temporal Constraint: Your hypotheses MUST respect the timeline. A cause cannot occur AFTER the first reported error symptom.
+
+RETURN FORMAT:
+You MUST return a JSON array of objects. Each object must have:
+- "id": A unique string ID for this hypothesis (e.g. "hyp_1")
+- "claim": A 1-2 sentence description of the root cause
+- "evidence_ids": An array of string IDs from the EVIDENCE CHUNKS that support this claim
+- "contradiction_ids": An array of string IDs from the EVIDENCE CHUNKS that contradict this claim (if any)
+- "reasoning": Why you believe this hypothesis is plausible based on the timeline and evidence.
+
+Return ONLY the JSON array.
