@@ -42,7 +42,7 @@ export interface Incident {
   description: string;
   affectedService?: string;
   timeframe: { from: string; to: string };
-  status: 'open' | 'investigating' | 'resolved' | 'completed';
+  status: 'open' | 'queued' | 'investigating' | 'failed' | 'insufficient_evidence' | 'resolved' | 'completed';
   createdAt: string;
   hypotheses: Hypothesis[];
   evidence: EvidenceChunk[];

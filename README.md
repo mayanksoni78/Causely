@@ -92,14 +92,22 @@ flowchart TB
     MIG --> DB
 
     SOURCE --> SOURCES
-    SOURCES --> CHUNK
+    
+    %% Static Logs are indexed
+    SOURCES -- Static Logs --> CHUNK
+    
+    %% Other connectors are fetched on demand
+    SOURCES -- APIs & DBs --> FETCH[Dynamic Fetch]
 
     CHUNK --> EMBED
     CHUNK --> BM25
     EMBED --> VECTORSEARCH
     BM25 --> FUSION
     VECTORSEARCH --> FUSION
+    
+    %% Fused indexed chunks and dynamically fetched chunks merge here
     FUSION --> RERANK
+    FETCH --> RERANK
 
     INCIDENT --> GRAPH
     RERANK --> GRAPH
@@ -156,7 +164,7 @@ Causely uses a robust HTTP-only cookie authentication pattern.
 1. The frontend POSTs credentials to the FastAPI `/auth/login` endpoint.
 2. The backend hashes passwords using `bcrypt` and validates them against the database.
 3. Upon success, a JWT is generated and returned securely via an `HttpOnly` cookie.
-4. Subsequent authenticated requests automatically include the cookie, preventing XSS attacks from reading the token from `localStorage`.
+4. Subsequent authenticated requests automatically include the cookie. Using `HttpOnly` prevents client-side JavaScript from directly reading the authentication cookie, and therefore significantly reduces the impact of token theft through XSS.
 5. A backend dependency (`get_current_user`) decodes the JWT and verifies the user's active session.
 
 ## Multi-Tenant / Multi-Project Architecture
@@ -207,16 +215,16 @@ All sensitive source credentials (e.g., GitHub tokens, database connection strin
 - Validated and encrypted before database insertion using a server-side `ENCRYPTION_KEY`.
 - Never logged in plaintext.
 - Never returned in `GET /sources` lists. The frontend only receives safe metadata and status identifiers.
-- External PostgreSQL connections enforce read-only configurations, rejecting any connection string with write privileges.
+- External PostgreSQL connections enforce a read-only configuration check; the backend rejects the registration if the connector's permission report `is_read_only` flag is false.
 
 ## RAG / Retrieval Architecture
 
 Before the LLM starts reasoning, Causely surfaces the most relevant information:
-1. Sources are ingested and split into chunks.
-2. Chunks are passed through embedding models and saved into `pgvector`.
-3. During an investigation, relevant chunks are pulled via both **Vector Search** (semantic) and **BM25 Search** (keyword matching).
-4. **Reciprocal Rank Fusion** (RRF) merges the results.
-5. **CrossEncoder Reranking** orders the fused evidence by exact contextual relevance.
+1. Static log sources are ingested, chunked, and saved into `pgvector` prior to investigation.
+2. During an investigation, dynamic connectors (e.g., GitHub, PostgreSQL, Stripe) fetch live evidence on-demand based on the investigation state.
+3. Simultaneously, relevant indexed chunks are pulled via both **Vector Search** (semantic) and **BM25 Search** (keyword matching).
+4. **Reciprocal Rank Fusion** (RRF) merges the indexed vector and keyword results.
+5. **CrossEncoder Reranking** evaluates both the fused indexed evidence and the dynamically fetched evidence together, ordering them by exact contextual relevance before passing to the LLM.
 
 ## AI Investigation Pipeline
 
@@ -308,8 +316,6 @@ FRONTEND_URL=http://localhost:5173
 ### Frontend (`frontend/.env.local`)
 ```env
 VITE_API_BASE_URL=http://localhost:8000
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_anon_key_here
 ```
 *(Do NOT commit your `.env` files or expose `.env` variables to version control!)*
 
