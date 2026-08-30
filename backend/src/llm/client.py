@@ -13,12 +13,15 @@ class LLMClient:
             api_key = settings.llm_api_key if settings and settings.llm_api_key else os.getenv("GEMINI_API_KEY", "dummy")
             ollama_url = settings.ollama_base_url if settings and settings.ollama_base_url else os.getenv("OLLAMA_URL", "http://localhost:11434")
             
+            gemini_model = settings.llm_model if settings and settings.llm_model else "gemini-2.0-flash"
+            ollama_model = settings.ollama_model if settings and settings.ollama_model else "llama3"
+            
             if provider == "gemini":
                 from langchain_google_genai import ChatGoogleGenerativeAI
-                return ChatGoogleGenerativeAI(model="gemini-3.6-flash", google_api_key=api_key)
+                return ChatGoogleGenerativeAI(model=gemini_model, google_api_key=api_key)
             else:
                 from langchain_community.chat_models import ChatOllama
-                return ChatOllama(model="llama3.2", base_url=ollama_url)
+                return ChatOllama(model=ollama_model, base_url=ollama_url)
         finally:
             db.close()
 

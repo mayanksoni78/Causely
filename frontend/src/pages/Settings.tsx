@@ -29,6 +29,7 @@ const Settings = () => {
       if (data.model) setModel(data.model);
       if (data.gemini_api_key) setGeminiKey(data.gemini_api_key);
       if (data.ollama_base_url) setOllamaUrl(data.ollama_base_url);
+      if (data.ollama_model) setOllamaModel(data.ollama_model);
       setHasByokKey(!!data.has_byok_key);
       setUsage(usageData);
     } finally {
@@ -46,8 +47,10 @@ const Settings = () => {
     try {
       await updateSettings({ 
         provider,
+        model,
         gemini_api_key: geminiKey,
         ollama_base_url: ollamaUrl,
+        ollama_model: ollamaModel,
         remove_key: removeKey
       });
       setSaveMessage({type: 'success', text: "Settings saved successfully."});
@@ -139,7 +142,10 @@ const Settings = () => {
                 <div>
                   <label className="text-secondary" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Model</label>
                   <select className="input-field" value={model} onChange={e => setModel(e.target.value)}>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
                     <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                    <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
                   </select>
                 </div>
                 
@@ -187,6 +193,7 @@ const Settings = () => {
                   <label className="text-secondary" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Ollama Model</label>
                   <select className="input-field" value={ollamaModel} onChange={e => setOllamaModel(e.target.value)}>
                     <option value="llama3">llama3</option>
+                    <option value="llama3.2">llama3.2</option>
                     <option value="mistral">mistral</option>
                     <option value="phi3">phi3</option>
                   </select>

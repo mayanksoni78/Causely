@@ -17,6 +17,7 @@ class SettingsUpdate(BaseModel):
     model: str = "gemini-2.0-flash"
     gemini_api_key: str = ""
     ollama_base_url: str = ""
+    ollama_model: str = "llama3"
     remove_key: bool = False
 
 class ClearDataRequest(BaseModel):
@@ -33,20 +34,27 @@ async def update_settings(
         settings = TenantSettings(tenant_id=user.tenant_id)
         db.add(settings)
         
+    # Validate the model payload before setting
+    valid_gemini_models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash", "gemini-3.6-flash"]
+    valid_ollama_models = ["llama3", "mistral", "phi3", "llama3.2"]
+
     settings.llm_provider = payload.provider
-    # Assuming there's a field for model, or we can stash it. We don't have llm_model natively maybe? 
-    # Let's check if llm_model exists in TenantSettings model. If not, we might ignore it or store in a json block.
-    # We will just use payload.model in the frontend.
-    
+    if payload.model in valid_gemini_models:
+        settings.llm_model = payload.model
+    else:
+        # Default fallback
+        settings.llm_model = "gemini-2.0-flash"
+        
     if payload.remove_key:
         settings.llm_api_key = None
     elif payload.provider == "gemini" and payload.gemini_api_key and not payload.gemini_api_key.startswith("••••"):
-        # Encrypt the API key before saving!
         encrypted = encrypt_dict({"key": payload.gemini_api_key})
         settings.llm_api_key = encrypted
         
     if payload.provider == "ollama":
         settings.ollama_base_url = payload.ollama_base_url
+        if payload.ollama_model in valid_ollama_models:
+            settings.ollama_model = payload.ollama_model
         
     db.commit()
     return {"status": "success", "message": "Settings updated"}
@@ -63,7 +71,6 @@ async def get_settings(
     if settings and settings.llm_api_key:
         has_byok = True
         try:
-            # Decrypt to get last 4 chars
             decrypted = decrypt_dict(settings.llm_api_key)
             actual_key = decrypted.get("key", "")
             if actual_key and len(actual_key) > 4:
@@ -76,10 +83,11 @@ async def get_settings(
     return {
         "configured": True,
         "provider": settings.llm_provider if settings else "gemini",
-        "model": "gemini-2.0-flash", # Hardcoded for now based on current client.py setup
+        "model": settings.llm_model if settings and settings.llm_model else "gemini-2.0-flash",
         "has_byok_key": has_byok,
         "gemini_api_key": masked_key,
-        "ollama_base_url": settings.ollama_base_url if settings else "http://localhost:11434"
+        "ollama_base_url": settings.ollama_base_url if settings and settings.ollama_base_url else "http://localhost:11434",
+        "ollama_model": settings.ollama_model if settings and settings.ollama_model else "llama3"
     }
 
 @router.post("/test-llm")
@@ -93,9 +101,16 @@ async def test_llm_connection(
         elapsed = int((time.time() - start) * 1000)
         
         if res:
+            settings = db.query(TenantSettings).filter(TenantSettings.tenant_id == user.tenant_id).first()
+            provider = settings.llm_provider if settings else "gemini"
+            if provider == "gemini":
+                model_used = settings.llm_model if settings and settings.llm_model else "gemini-2.0-flash"
+            else:
+                model_used = settings.ollama_model if settings and settings.ollama_model else "llama3"
+                
             return {
                 "status": "ok", 
-                "model": "gemini-2.0-flash", 
+                "model": model_used, 
                 "response_time": f"{elapsed}ms", 
                 "message": "Connection successful"
             }

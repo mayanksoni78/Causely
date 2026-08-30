@@ -1,4 +1,5 @@
 import uuid
+import os
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -235,7 +236,8 @@ def invite_member(
     print(f"==================================================")
     print(f"DEV ONLY INVITATION EMAIL TO: {req.email}")
     print(f"Role: {req.role}")
-    print(f"Accept link: http://localhost:5173/invites/{token}")
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    print(f"Accept link: {FRONTEND_URL}/invites/{token}")
     print(f"==================================================")
     
     return {"status": "invited", "message": "Invitation sent successfully"}

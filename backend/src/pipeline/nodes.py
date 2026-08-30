@@ -59,7 +59,7 @@ async def intake_node(state: InvestigationState) -> InvestigationState:
     prompt = f"Extract service name, error_signature, timeframe, and affected_endpoint from this incident description as JSON: {state['description']}"
     
     try:
-        entities = await llm.complete_json(prompt)
+        entities = await llm.complete_json(prompt, tenant_id=state["tenant_id"])
     except Exception:
         entities = {"service": "unknown", "error_signature": "unknown", "timeframe": "unknown", "affected_endpoint": "unknown"}
         
@@ -176,7 +176,7 @@ async def timeline_node(state: InvestigationState) -> InvestigationState:
     prompt = prompt_template.replace("{evidence_chunks}", chunks_str)
     
     try:
-        timeline = await llm.complete_json(prompt)
+        timeline = await llm.complete_json(prompt, tenant_id=state["tenant_id"])
         if not isinstance(timeline, list):
             timeline = [timeline]
     except Exception:
@@ -197,7 +197,7 @@ async def hypothesis_generation_node(state: InvestigationState) -> Investigation
     prompt = prompt_template.replace("{incident_description}", state["description"]).replace("{entities}", json.dumps(state["entities"])).replace("{evidence_chunks}", chunks_str).replace("{timeline}", json.dumps(state.get("timeline", [])))
     
     try:
-        hypotheses = await llm.complete_json(prompt)
+        hypotheses = await llm.complete_json(prompt, tenant_id=state["tenant_id"])
         if not isinstance(hypotheses, list):
             hypotheses = [hypotheses]
     except Exception:
@@ -307,7 +307,7 @@ async def synthesis_node(state: InvestigationState) -> InvestigationState:
     prompt = prompt_template.replace("{incident_description}", state["description"]).replace("{verified_hypotheses}", json.dumps(valid_hyps)).replace("{evidence_chunks}", chunks_str)
     
     try:
-        report = await llm.complete(prompt)
+        report = await llm.complete(prompt, tenant_id=state["tenant_id"])
     except Exception as e:
         report = f"Failed to synthesize report: {e}"
         

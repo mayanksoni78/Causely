@@ -47,8 +47,10 @@ class TenantSettings(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, unique=True)
     llm_provider = Column(String, default="gemini")
+    llm_model = Column(String, default="gemini-2.0-flash")
     llm_api_key = Column(String, nullable=True) # in a real app this should be encrypted
     ollama_base_url = Column(String, nullable=True)
+    ollama_model = Column(String, default="llama3")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
