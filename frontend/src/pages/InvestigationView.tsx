@@ -13,7 +13,7 @@ const InvestigationView = () => {
     queryKey: ['incident', id],
     queryFn: () => getIncident(id || ''),
     enabled: !!id,
-    refetchInterval: (query: any) => query?.state?.data?.status === 'investigating' ? 2000 : false
+    refetchInterval: (query: unknown) => (query as {state?: {data?: {status?: string}}})?.state?.data?.status === 'investigating' ? 2000 : false
   });
 
   if (isLoading) {
@@ -63,7 +63,7 @@ const InvestigationView = () => {
               ) : (
                 incident.trace?.map((step: any, idx: number) => (
                   <div key={idx} style={{ padding: '0.5rem 0', borderBottom: idx < incident.trace.length - 1 ? '1px dashed var(--border)' : 'none' }}>
-                    <span style={{ color: 'var(--accent)', marginRight: '0.5rem' }}>[{step.step_name}]</span>
+                    <span style={{ color: 'var(--accent)', marginRight: '0.5rem' }}>[{step.action_name}]</span>
                     {step.details?.report ? step.details.report.substring(0, 100) + '...' : JSON.stringify(step.details)}
                   </div>
                 ))

@@ -16,7 +16,7 @@ export interface EvidenceChunk {
   content: string;
   url?: string;
   timestamp: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export interface Hypothesis {
@@ -47,10 +47,10 @@ export interface Incident {
   hypotheses: Hypothesis[];
   evidence: EvidenceChunk[];
   trace: InvestigationTraceStep[];
-  final_report?: any;
+  final_report?: Record<string, unknown>;
   confidence_level?: string;
   confidence_score?: number;
-  confidence?: any;
+  confidence?: ConfidenceScore;
 }
 
 export interface Source {
@@ -60,7 +60,7 @@ export interface Source {
   provider?: string;
   name: string;
   status: 'connected' | 'disconnected' | 'error' | 'coming_soon' | 'connecting';
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
   capabilities?: string[];
 }
 

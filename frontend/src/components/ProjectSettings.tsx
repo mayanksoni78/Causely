@@ -5,7 +5,7 @@ import { Users, Edit, Trash2, Plus, Mail } from 'lucide-react';
 
 const ProjectSettings = () => {
   const { currentProject, projects, refreshProjects, setCurrentProjectId } = useProject();
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<Array<{id: string, email: string, role: string, user_id?: string, name?: string}>>([]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('MEMBER');
   const [newProjectName, setNewProjectName] = useState('');
@@ -17,7 +17,7 @@ const ProjectSettings = () => {
     }
   }, [currentProject]);
 
-  const handleInvite = async (e: any) => {
+  const handleInvite = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!currentProject) return;
     try {
@@ -29,7 +29,7 @@ const ProjectSettings = () => {
     }
   };
 
-  const handleCreateProject = async (e: any) => {
+  const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newProjectName) return;
     try {

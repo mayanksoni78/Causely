@@ -73,27 +73,17 @@ async def get_settings(
     user: DBUser = Depends(get_current_user)
 ):
     settings = db.query(TenantSettings).filter(TenantSettings.tenant_id == user.tenant_id).first()
-    masked_key = ""
     has_byok = False
-    
     if settings and settings.llm_api_key:
         has_byok = True
-        try:
-            decrypted = decrypt_dict(settings.llm_api_key)
-            actual_key = decrypted.get("key", "")
-            if actual_key and len(actual_key) > 4:
-                masked_key = "••••••••••••••••" + actual_key[-4:]
-            else:
-                masked_key = "••••••••••••••••"
-        except:
-            masked_key = "••••••••••••••••"
         
     return {
         "configured": True,
         "provider": settings.llm_provider if settings else "gemini",
         "model": settings.llm_model if settings and settings.llm_model else "gemini-3.7-flash",
         "has_byok_key": has_byok,
-        "gemini_api_key": masked_key,
+        "supported_gemini_models": SUPPORTED_GEMINI_MODELS,
+        "supported_ollama_models": SUPPORTED_OLLAMA_MODELS,
         "ollama_base_url": settings.ollama_base_url if settings and settings.ollama_base_url else "http://localhost:11434",
         "ollama_model": settings.ollama_model if settings and settings.ollama_model else "llama3"
     }
@@ -123,17 +113,20 @@ async def test_llm_connection(
                 "message": "Connection successful"
             }
         raise HTTPException(status_code=500, detail="LLM connected but returned empty response")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.exception("LLM connection test failed")
+        raise HTTPException(status_code=502, detail="Unable to connect to the configured LLM provider.")
 
 @router.get("/usage")
 async def get_usage(
     db: Session = Depends(get_db),
     user: DBUser = Depends(get_current_user)
 ):
-    from datetime import datetime
-    today = datetime.utcnow().date()
-    start_of_day = datetime(today.year, today.month, today.day)
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date()
+    start_of_day = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
     
     daily_count = db.query(Incident).filter(
         Incident.tenant_id == user.tenant_id,
@@ -142,7 +135,7 @@ async def get_usage(
     
     active_count = db.query(Incident).filter(
         Incident.tenant_id == user.tenant_id,
-        Incident.status.in_(["created", "investigating"])
+        Incident.status.in_(["queued", "investigating"])
     ).count()
     
     return {
@@ -158,6 +151,14 @@ async def clear_tenant_data(
     db: Session = Depends(get_db),
     user: DBUser = Depends(get_current_user)
 ):
+    from src.models.domain import ProjectMember
+    has_admin = db.query(ProjectMember).filter(
+        ProjectMember.user_id == user.id,
+        ProjectMember.role.in_(["OWNER", "ADMIN"])
+    ).first()
+    if not has_admin:
+        raise HTTPException(status_code=403, detail="Must be an OWNER or ADMIN to clear tenant data")
+
     if payload.confirmation != "DELETE ALL DATA":
         raise HTTPException(status_code=400, detail="Invalid confirmation string")
         

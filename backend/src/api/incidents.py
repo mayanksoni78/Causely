@@ -44,7 +44,7 @@ def run_investigation_sync(incident_id: str, tenant_id: str, project_id: str, de
             final_state["status"] = "completed"
         except Exception as e:
             final_state = initial_state
-            logger.exception(f"Server-side investigation error: "); final_state["final_report"] = {"report": "Investigation failed. Please check the connected sources and try again."}
+            logger.exception("Server-side investigation error"); final_state["final_report"] = {"report": "Investigation failed. Please check the connected sources and try again."}
             final_state["status"] = "failed"
             
         # Update incident in DB
@@ -70,7 +70,7 @@ def run_investigation_sync(incident_id: str, tenant_id: str, project_id: str, de
             db.commit()
 
     except Exception as e:
-        logger.exception(f"Background task error: ")
+        logger.exception("Background task error")
     finally:
         db.close()
 
@@ -86,14 +86,15 @@ async def create_incident(
     # 1. Concurrent Investigation Limit
     active_count = db.query(Incident).filter(
         Incident.project_id == project.id,
-        Incident.status.in_(["created", "investigating"])
+        Incident.status.in_(["queued", "investigating"])
     ).count()
     if active_count >= 2:
         raise HTTPException(status_code=429, detail="Maximum concurrent investigations reached. Please wait for an active investigation to complete.")
         
     # 2. Daily Quota Limit (tenant level for now)
-    today = datetime.utcnow().date()
-    start_of_day = datetime(today.year, today.month, today.day)
+    from datetime import timezone
+    today = datetime.now(timezone.utc).date()
+    start_of_day = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
     daily_count = db.query(Incident).filter(
         Incident.tenant_id == project.tenant_id,
         Incident.created_at >= start_of_day

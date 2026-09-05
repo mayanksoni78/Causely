@@ -165,9 +165,9 @@ class GitHubConnector(SourceConnector):
                             ))
                             count += 1
                     except Exception as inner_e:
-                        print(f"Failed to decode file {file.path}: {inner_e}")
+                        logger.exception(f"Failed to decode file {file.path}")
             except GithubException as e:
-                logger.exception(f"Error searching code: ")
+                logger.exception("Error searching code")
 
         except Exception as e:
             logger.exception(f"General failure in GitHubConnector fetch: ")

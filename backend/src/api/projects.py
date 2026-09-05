@@ -11,6 +11,9 @@ from src.core.auth import get_current_user, get_current_project, require_role
 from src.models.user import User as DBUser
 from src.models.domain import Project, ProjectMember, ProjectInvitation
 
+import logging
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 class ProjectCreate(BaseModel):
@@ -233,12 +236,12 @@ def invite_member(
     db.add(invitation)
     db.commit()
     
-    print(f"==================================================")
-    print(f"DEV ONLY INVITATION EMAIL TO: {req.email}")
-    print(f"Role: {req.role}")
+    logger.info("==================================================")
+    logger.info(f"DEV ONLY INVITATION EMAIL TO: {req.email}")
+    logger.info(f"Role: {req.role}")
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    print(f"Accept link: {FRONTEND_URL}/invites/{token}")
-    print(f"==================================================")
+    logger.info(f"Accept link: {FRONTEND_URL}/invites/{token}")
+    logger.info("==================================================")
     
     return {"status": "invited", "message": "Invitation sent successfully"}
 

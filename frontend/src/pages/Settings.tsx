@@ -2,23 +2,9 @@ import { useState, useEffect } from 'react';
 import { getSettings, updateSettings, testLlmConnection, clearTenantData, getUsage } from '../lib/api';
 import { CheckCircle2, XCircle, Shield, AlertTriangle, Database, Lock, Users, Activity, Trash2, Key, Server } from 'lucide-react';
 
-const GEMINI_MODELS = [
-  { id: "gemini-3.7-flash", name: "Gemini 3.7 Flash (Default)" },
-  { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash" },
-  { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
-  { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash Lite" },
-  { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash Lite" },
-  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
-  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" },
-  { id: "gemini-2.5-flash-lite", name: "Gemini 2.5 Flash-Lite" }
-];
 
-const OLLAMA_MODELS = [
-  { id: "llama3", name: "llama3 (Default)" },
-  { id: "llama3.2", name: "llama3.2" },
-  { id: "mistral", name: "mistral" },
-  { id: "phi3", name: "phi3" }
-];
+
+
 
 
 const getErrorMsg = (err: unknown) => {
@@ -36,6 +22,8 @@ const Settings = () => {
   const [hasByokKey, setHasByokKey] = useState(false);
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434');
   const [ollamaModel, setOllamaModel] = useState('llama3');
+  const [supportedGeminiModels, setSupportedGeminiModels] = useState<string[]>([]);
+  const [supportedOllamaModels, setSupportedOllamaModels] = useState<string[]>([]);
   
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
@@ -58,8 +46,10 @@ const Settings = () => {
       if (data.model) setModel(data.model);
       setGeminiKey("");
       if (data.ollama_base_url) setOllamaUrl(data.ollama_base_url);
-      if (data.ollama_model) setOllamaModel(data.ollama_model);
+            if (data.ollama_model) setOllamaModel(data.ollama_model);
       setHasByokKey(!!data.has_byok_key);
+      if (data.supported_gemini_models) setSupportedGeminiModels(data.supported_gemini_models);
+      if (data.supported_ollama_models) setSupportedOllamaModels(data.supported_ollama_models);
       setUsage(usageData);
     } catch (error: unknown) {
       setSettingsError('Unable to load settings. Please try again.');
@@ -115,13 +105,12 @@ const Settings = () => {
     setIsClearing(true);
     try {
       await clearTenantData(clearConfirm);
-      alert("All tenant data deleted securely.");
+      setSaveMessage({type: 'success', text: "All tenant data deleted securely."});
       setShowClearModal(false);
       setClearConfirm('');
-      window.location.reload();
+      setTimeout(() => window.location.reload(), 1500);
     } catch (error: unknown) {
-      const e = error as any;
-      setSaveMessage({type: 'error', text: `Failed to clear data: ${e?.response?.data?.detail || e?.message}`});
+      setSaveMessage({type: 'error', text: `Failed to clear data: ${getErrorMsg(error)}`});
     }
     setIsClearing(false);
   };
@@ -174,8 +163,8 @@ const Settings = () => {
                 <div>
                   <label className="text-secondary" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Model</label>
                   <select className="input-field" value={model} onChange={e => setModel(e.target.value)}>
-                    {GEMINI_MODELS.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
+                    {supportedGeminiModels.map(m => (
+                      <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
                 </div>
@@ -223,8 +212,8 @@ const Settings = () => {
                 <div>
                   <label className="text-secondary" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Ollama Model</label>
                   <select className="input-field" value={ollamaModel} onChange={e => setOllamaModel(e.target.value)}>
-                    {OLLAMA_MODELS.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
+                    {supportedOllamaModels.map(m => (
+                      <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
                 </div>

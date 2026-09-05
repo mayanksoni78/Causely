@@ -55,7 +55,7 @@ export const loginUser = async (email: string, password: string) => {
   return res.data;
 };
 
-export const signupUser = async (data: any) => {
+export const signupUser = async (data: Record<string, unknown>) => {
   const res = await api.post('/auth/signup', data);
   return res.data;
 };
@@ -80,7 +80,7 @@ export const getSettings = async () => {
   return response.data;
 };
 
-export const updateSettings = async (data: any) => {
+export const updateSettings = async (data: Record<string, unknown>) => {
   const response = await api.post('/settings', data);
   return response.data;
 };
@@ -214,7 +214,7 @@ export const getProjects = async () => {
   return res.data;
 };
 
-export const createProject = async (data: any) => {
+export const createProject = async (data: Record<string, unknown>) => {
   const res = await api.post('/projects', data);
   return res.data;
 };
@@ -224,7 +224,7 @@ export const getProject = async (id: string) => {
   return res.data;
 };
 
-export const updateProject = async (id: string, data: any) => {
+export const updateProject = async (id: string, data: Record<string, unknown>) => {
   const res = await api.patch(`/projects/${id}`, data);
   return res.data;
 };

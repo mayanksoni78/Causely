@@ -14,7 +14,7 @@ interface Readiness {
 
 interface SourceFormData {
   endpoints?: string;
-  file?: any;
+  file?: File;
   base_url?: string;
   headers?: string;
   name?: string;
@@ -79,10 +79,10 @@ const ConnectSources = () => {
         throw new Error('Please select a file');
       }
       
-      let payload: any = { ...formData };
+      let payload: Record<string, unknown> = { ...formData } as Record<string, unknown>;
       
       if (type === 'generic_rest') {
-        payload.endpoints = payload.endpoints ? payload.endpoints.split(',').map((s: string) => s.trim()) : [];
+        payload.endpoints = payload.endpoints ? (payload.endpoints as string).split(',').map((s: string) => s.trim()) : [];
       }
       
       if (type === 'static_log') {
@@ -212,7 +212,7 @@ const ConnectSources = () => {
             {sourceInfo && sourceInfo.type === 'static_log' && sourceInfo.config && (
                 <div style={{ marginBottom: '1rem', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                   <div><span className="text-secondary">Filename:</span> {sourceInfo.config.filename}</div>
-                  <div><span className="text-secondary">Size:</span> {(sourceInfo.config.size / 1024).toFixed(1)} KB</div>
+                  <div><span className="text-secondary">Size:</span> {((sourceInfo.config?.size as number) / 1024).toFixed(1)} KB</div>
                   {capabilities && capabilities.find(c => c.startsWith('indexed_chunks:')) && (
                       <div><span className="text-secondary">Chunks Indexed:</span> {capabilities.find(c => c.startsWith('indexed_chunks:'))?.split(':')[1]}</div>
                   )}
@@ -450,7 +450,7 @@ const ConnectSources = () => {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(4px)' }}>
           <div className="card bg-gray-900 border-gray-800" style={{ width: '100%', maxWidth: '500px' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-              Configure {(availableIntegrations.find(i => i.type === showModal) as any)?.name}
+              Configure {(availableIntegrations.find(i => i.type === showModal) as {name?: string})?.name}
             </h2>
             <p className="text-secondary" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>
               Enter your credentials to securely connect this source. Causely uses read-only access.

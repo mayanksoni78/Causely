@@ -18,6 +18,9 @@ from src.connectors.postgres import PostgresConnector
 from src.connectors.mongodb import MongoDBConnector
 from src.connectors.loki import LokiConnector
 
+import logging
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/sources", tags=["sources"])
 
 class GenericRESTRegister(BaseModel):
@@ -164,11 +167,10 @@ async def register_log(
         new_source.capabilities = ["log_search", f"indexed_chunks:{count}"]
         db.commit()
         return {"id": str(new_source.id), "indexed": count}
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        logger.exception("Failed to process static log file")
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Failed to process file: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to process file")
 
 class DbRegister(BaseModel):
     connection_string: str

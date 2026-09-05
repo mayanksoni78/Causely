@@ -11,7 +11,7 @@ interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   login: (email: string, pass: string) => Promise<void>;
-  signup: (data: any) => Promise<void>;
+  signup: (data: Record<string, unknown>) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(res);
   };
 
-  const signup = async (data: any) => {
+  const signup = async (data: Record<string, unknown>) => {
     const res = await signupUser(data);
     setUser(res);
   };
