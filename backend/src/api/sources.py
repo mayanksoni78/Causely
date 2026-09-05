@@ -106,8 +106,12 @@ async def register_github(
     db: Session = Depends(get_db),
     project: Project = Depends(get_current_project)
 ):
-    connector = GitHubConnector(payload.repo_url, payload.token)
-    perms = connector.check_permissions()
+    try:
+        connector = GitHubConnector(payload.repo_url, payload.token)
+        perms = connector.check_permissions()
+    except Exception as e:
+        logger.exception("Failed to connect to GitHub repository")
+        raise HTTPException(status_code=400, detail=f"Repository not found or private. Ensure URL is correct and provide a Personal Access Token if it is private. Error: {str(e)}")
     
     if not perms.granted_scopes:
         raise HTTPException(status_code=400, detail=f"Permission check failed: {perms.warnings}")

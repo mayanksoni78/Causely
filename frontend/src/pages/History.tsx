@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useProject } from '../contexts/ProjectContext';
 import { getIncidents } from '../lib/api';
 import type { Incident } from '../lib/types';
 
 const History = () => {
+  const { currentProject } = useProject();
   const { data: incidents = [], isLoading, isError } = useQuery({
-    queryKey: ['incidents'],
+    queryKey: ['incidents', currentProject?.id],
+      enabled: !!currentProject?.id,
     queryFn: getIncidents,
     refetchInterval: (query) => {
       const data = query.state.data as Incident[];

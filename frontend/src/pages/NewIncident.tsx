@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useProject } from '../contexts/ProjectContext';
 import { createIncident, getReadiness } from '../lib/api';
 import { CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react';
 
 const NewIncident = () => {
+  const { currentProject } = useProject();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -14,7 +16,8 @@ const NewIncident = () => {
   });
 
   const { data: readiness, isLoading: readinessLoading, isError: readinessError } = useQuery({
-    queryKey: ['readiness'],
+    queryKey: ['readiness', currentProject?.id],
+    enabled: !!currentProject?.id,
     queryFn: getReadiness
   });
 

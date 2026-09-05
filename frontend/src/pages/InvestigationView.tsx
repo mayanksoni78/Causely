@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useProject } from '../contexts/ProjectContext';
 import { getIncident } from '../lib/api';
 import { ShieldAlert, Terminal, CheckCircle, Search, AlertTriangle, FileText, ChevronDown, ChevronRight, Activity } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const InvestigationView = () => {
+  const { currentProject } = useProject();
   const { id } = useParams<{ id: string }>();
   const [traceOpen, setTraceOpen] = useState(false);
 
   const { data: incident, isLoading } = useQuery({
     queryKey: ['incident', id],
     queryFn: () => getIncident(id || ''),
-    enabled: !!id,
+    enabled: !!id && !!currentProject?.id,
     refetchInterval: (query: unknown) => (query as {state?: {data?: {status?: string}}})?.state?.data?.status === 'investigating' ? 2000 : false
   });
 

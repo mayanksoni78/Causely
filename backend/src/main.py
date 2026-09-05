@@ -1,4 +1,6 @@
 import os
+import logging
+logger = logging.getLogger(__name__)
 import secrets
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,11 +19,11 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("Initializing backend...")
+    logger.info("Initializing backend...")
     # Base.metadata.create_all(bind=engine)  # Disabled: using Alembic now
-    print("Database ready.")
+    logger.info("Database ready.")
     yield
-    print("Shutting down...")
+    logger.info("Shutting down...")
 
 app = FastAPI(title="Causely", lifespan=lifespan)
 
@@ -77,12 +79,12 @@ app.include_router(settings_router)
 def health_check():
     from src.core.database import SessionLocal
     from sqlalchemy import text
+    from fastapi import Response
     try:
         db = SessionLocal()
         db.execute(text("SELECT 1"))
         db.close()
         return {"status": "ok", "database": "connected"}
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return {"status": "degraded", "database": "unavailable"}
+    except Exception:
+        logger.exception("Database connection failed during health check")
+        return JSONResponse(status_code=503, content={"status": "degraded", "database": "unavailable"})

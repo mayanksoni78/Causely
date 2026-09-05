@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useProject } from '../contexts/ProjectContext';
 import { getIncidents, getDashboardStats } from '../lib/api';
 import { AlertCircle, CheckCircle, Database, Activity } from 'lucide-react';
 import type { Incident, DashboardStats } from '../lib/types';
 
 const Dashboard = () => {
+  const { currentProject } = useProject();
   const { data: stats, isLoading: statsLoading, isError: statsError } = useQuery({
-    queryKey: ['dashboard-stats'],
+    queryKey: ['dashboard-stats', currentProject?.id],
+      enabled: !!currentProject?.id,
     queryFn: getDashboardStats,
     refetchInterval: (query) => {
       // We don't have direct access to incidents here easily without reading cache, 
@@ -18,7 +21,8 @@ const Dashboard = () => {
   });
 
   const { data: allIncidents = [], isLoading, isError: incidentsError } = useQuery({
-    queryKey: ['incidents'],
+    queryKey: ['incidents', currentProject?.id],
+      enabled: !!currentProject?.id,
     queryFn: getIncidents,
     refetchInterval: (query) => {
       const data = query.state.data as Incident[];

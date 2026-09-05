@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useProject } from '../contexts/ProjectContext';
 import type { DragEvent as ReactDragEvent } from 'react';
 import { getSources, createSource, getReadiness, deleteSource, testConnection } from '../lib/api';
 import type { Source } from '../lib/types';
@@ -34,6 +35,7 @@ const getErrorMsg = (err: unknown) => {
 import { GitBranch, Database, FileText, Search, Activity, Zap, Cloud, Plus, History, Shield, UploadCloud, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 const ConnectSources = () => {
+  const { currentProject } = useProject();
   const [sources, setSources] = useState<Source[]>([]);
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,8 +70,8 @@ const ConnectSources = () => {
   };
 
   useEffect(() => {
-    refreshData();
-  }, []);
+    if (currentProject?.id) refreshData();
+  }, [currentProject?.id]);
 
   const handleConnect = async (type: string) => {
     setSubmitError('');
