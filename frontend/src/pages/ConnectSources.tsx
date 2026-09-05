@@ -2,15 +2,44 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
 import { getSources, createSource, getReadiness, deleteSource, testConnection } from '../lib/api';
 import type { Source } from '../lib/types';
+
+interface Readiness {
+  score: number;
+  code: boolean;
+  logs: boolean;
+  database: boolean;
+  external_services: boolean;
+  history: boolean;
+}
+
+interface SourceFormData {
+  endpoints?: string;
+  file?: any;
+  base_url?: string;
+  headers?: string;
+  name?: string;
+  repo_url?: string;
+  github_token?: string;
+  connection_string?: string;
+  [key: string]: unknown;
+}
+
+const getErrorMsg = (err: unknown) => {
+  if (err && typeof err === 'object' && 'response' in err) {
+    const ax = err as { response?: { data?: { detail?: string } } };
+    if (ax.response?.data?.detail) return ax.response.data.detail;
+  }
+  return err instanceof Error ? err.message : "An error occurred";
+};
 import { GitBranch, Database, FileText, Search, Activity, Zap, Cloud, Plus, History, Shield, UploadCloud, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 const ConnectSources = () => {
   const [sources, setSources] = useState<Source[]>([]);
-  const [readiness, setReadiness] = useState<Record<string, any> | null>(null);
+  const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [loading, setLoading] = useState(true);
   
   const [showModal, setShowModal] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [formData, setFormData] = useState<SourceFormData>({});
   const [submitError, setSubmitError] = useState('');
   const [submitLoading, setSubmitLoading] = useState(false);
   const [addIntegrationModal, setAddIntegrationModal] = useState(false);
@@ -32,7 +61,7 @@ const ConnectSources = () => {
       setSources(srcs);
       setReadiness(readys);
       setLoading(false);
-    }).catch(e => {
+    }).catch(() => {
       setPageError('Failed to load sources or readiness data.');
       setLoading(false);
     });
@@ -50,7 +79,7 @@ const ConnectSources = () => {
         throw new Error('Please select a file');
       }
       
-      let payload = { ...formData };
+      let payload: any = { ...formData };
       
       if (type === 'generic_rest') {
         payload.endpoints = payload.endpoints ? payload.endpoints.split(',').map((s: string) => s.trim()) : [];
@@ -70,8 +99,7 @@ const ConnectSources = () => {
       setUploadProgress(0);
       refreshData();
     } catch (error: unknown) {
-      const e = error as any;
-      setSubmitError(e?.response?.data?.detail || e.message);
+      setSubmitError(getErrorMsg(error));
     }
     setSubmitLoading(false);
   };
@@ -82,8 +110,7 @@ const ConnectSources = () => {
       await deleteSource(id);
       refreshData();
     } catch (error: unknown) {
-      const e = error as any;
-      setActionFeedback({ message: e?.response?.data?.detail || e?.message || "Action failed", type: "error" });
+      setActionFeedback({ message: getErrorMsg(error), type: "error" });
     }
     setDeletingId(null);
   };
@@ -230,7 +257,7 @@ const ConnectSources = () => {
     name: string;
     type: string;
     category: string;
-    icon: any;
+    icon: React.ElementType;
     desc: string;
     comingSoon?: boolean;
     builtIn?: boolean;
@@ -423,7 +450,7 @@ const ConnectSources = () => {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(4px)' }}>
           <div className="card bg-gray-900 border-gray-800" style={{ width: '100%', maxWidth: '500px' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-              Configure {availableIntegrations.find(i => i.type === showModal)?.name}
+              Configure {(availableIntegrations.find(i => i.type === showModal) as any)?.name}
             </h2>
             <p className="text-secondary" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>
               Enter your credentials to securely connect this source. Causely uses read-only access.

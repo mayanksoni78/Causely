@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 import requests
 from src.connectors.base import SourceConnector, PermissionReport, ConnectorStatus, EvidenceQuery, EvidenceChunk
 

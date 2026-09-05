@@ -82,5 +82,7 @@ def health_check():
         db.execute(text("SELECT 1"))
         db.close()
         return {"status": "ok", "database": "connected"}
-    except Exception:
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"status": "degraded", "database": "unavailable"}

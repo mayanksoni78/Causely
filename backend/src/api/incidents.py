@@ -1,4 +1,6 @@
-﻿import uuid
+import logging
+logger = logging.getLogger(__name__)
+import uuid
 import asyncio
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
 from pydantic import BaseModel
@@ -42,7 +44,7 @@ def run_investigation_sync(incident_id: str, tenant_id: str, project_id: str, de
             final_state["status"] = "completed"
         except Exception as e:
             final_state = initial_state
-            print(f"Server-side investigation error: {e}"); final_state["final_report"] = {"report": "Investigation failed. Please check the connected sources and try again."}
+            logger.exception(f"Server-side investigation error: "); final_state["final_report"] = {"report": "Investigation failed. Please check the connected sources and try again."}
             final_state["status"] = "failed"
             
         # Update incident in DB
@@ -68,7 +70,7 @@ def run_investigation_sync(incident_id: str, tenant_id: str, project_id: str, de
             db.commit()
 
     except Exception as e:
-        print(f"Background task error: {e}")
+        logger.exception(f"Background task error: ")
     finally:
         db.close()
 

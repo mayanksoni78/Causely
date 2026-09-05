@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 from datetime import datetime
 import json
 from src.pipeline.state import InvestigationState
@@ -134,7 +136,7 @@ async def retrieval_node(state: InvestigationState) -> InvestigationState:
                         seen.add(c.id)
                         chunks.append(c)
             except Exception as e:
-                print(f"Error fetching from connector {cid}: {e}")
+                logger.exception(f"Error fetching from connector {cid}: ")
                 pass
                 
         # Also query indexer (for previously ingested knowledge, e.g. static logs)

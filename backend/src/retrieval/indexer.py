@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 import hashlib
 from collections import defaultdict
 from rank_bm25 import BM25Okapi

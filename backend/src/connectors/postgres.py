@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.exc import SQLAlchemyError
 from src.connectors.base import SourceConnector, PermissionReport, ConnectorStatus, EvidenceQuery, EvidenceChunk
@@ -53,7 +55,7 @@ class PostgresConnector(SourceConnector):
                         relevance_score=1.0
                     ))
         except Exception as e:
-            print(f"Postgres fetch error: {e}")
+            logger.exception(f"Postgres fetch error: ")
             
         return chunks
 

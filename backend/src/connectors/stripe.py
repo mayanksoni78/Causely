@@ -1,4 +1,6 @@
-﻿import uuid
+import logging
+logger = logging.getLogger(__name__)
+import uuid
 import requests
 from src.connectors.base import SourceConnector, PermissionReport, ConnectorStatus, EvidenceQuery, EvidenceChunk
 
@@ -34,7 +36,7 @@ class StripeConnector(SourceConnector):
                             metadata={"event_id": evt.get('id'), "layer_level": 2}
                         ))
         except Exception as e:
-            print(f"Stripe fetch error: {e}")
+            logger.exception(f"Stripe fetch error: ")
         return chunks
 
     def health_check(self) -> ConnectorStatus:

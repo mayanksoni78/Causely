@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 import requests
 import uuid
 import base64
@@ -64,7 +66,7 @@ class GitHubConnector(SourceConnector):
                     metadata={"layer_level": 2, "type": "stack_detection"}
                 ))
         except GithubException as e:
-            print(f"Failed to detect stack: {e}")
+            logger.exception(f"Failed to detect stack: ")
         return chunks
 
     def fetch(self, query: EvidenceQuery) -> list[EvidenceChunk]:
@@ -99,7 +101,7 @@ class GitHubConnector(SourceConnector):
                              ))
                              count += 1
             except Exception as e:
-                print(f"Error fetching workflow runs: {e}")
+                logger.exception(f"Error fetching workflow runs: ")
 
             # Search commits
             try:
@@ -118,7 +120,7 @@ class GitHubConnector(SourceConnector):
                         ))
                         count += 1
             except GithubException as e:
-                print(f"Error fetching commits: {e}")
+                logger.exception(f"Error fetching commits: ")
 
             # Search issues and PRs (GitHub treats PRs as issues in this API)
             try:
@@ -140,7 +142,7 @@ class GitHubConnector(SourceConnector):
                         ))
                         count += 1
             except GithubException as e:
-                print(f"Error fetching issues/PRs: {e}")
+                logger.exception(f"Error fetching issues/PRs: ")
                 
             # Search file contents (basic keyword search in repo if supported, or via GitHub Search API)
             try:
@@ -165,10 +167,10 @@ class GitHubConnector(SourceConnector):
                     except Exception as inner_e:
                         print(f"Failed to decode file {file.path}: {inner_e}")
             except GithubException as e:
-                print(f"Error searching code: {e}")
+                logger.exception(f"Error searching code: ")
 
         except Exception as e:
-            print(f"General failure in GitHubConnector fetch: {e}")
+            logger.exception(f"General failure in GitHubConnector fetch: ")
             
         return chunks
 

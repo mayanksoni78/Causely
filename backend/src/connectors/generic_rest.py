@@ -1,4 +1,4 @@
-﻿import httpx
+import httpx
 import uuid
 from datetime import datetime
 from typing import List, Dict, Any

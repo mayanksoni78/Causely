@@ -1,4 +1,6 @@
-﻿import uuid
+import logging
+logger = logging.getLogger(__name__)
+import uuid
 import requests
 from src.connectors.base import SourceConnector, PermissionReport, ConnectorStatus, EvidenceQuery, EvidenceChunk
 
@@ -37,7 +39,7 @@ class GitHubActionsConnector(SourceConnector):
                         metadata={"run_id": run.get("id"), "layer_level": 1}
                     ))
         except Exception as e:
-            print(f"GitHub Actions fetch error: {e}")
+            logger.exception(f"GitHub Actions fetch error: ")
         return chunks
 
     def health_check(self) -> ConnectorStatus:

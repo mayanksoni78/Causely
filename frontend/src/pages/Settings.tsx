@@ -20,6 +20,15 @@ const OLLAMA_MODELS = [
   { id: "phi3", name: "phi3" }
 ];
 
+
+const getErrorMsg = (err: unknown) => {
+  if (err && typeof err === 'object' && 'response' in err) {
+    const ax = err as { response?: { data?: { detail?: string } } };
+    if (ax.response?.data?.detail) return ax.response.data.detail;
+  }
+  return err instanceof Error ? err.message : "An error occurred";
+};
+
 const Settings = () => {
   const [provider, setProvider] = useState('gemini');
   const [model, setModel] = useState('gemini-3.7-flash');
@@ -78,8 +87,7 @@ const Settings = () => {
       setSaveMessage({type: 'success', text: "Settings saved successfully."});
       await fetchSettings();
     } catch (error: unknown) {
-      const e = error as any;
-      setSaveMessage({type: 'error', text: `Failed to save settings: ${e?.response?.data?.detail || e.message}`});
+      setSaveMessage({type: 'error', text: `Failed to save settings: ${getErrorMsg(error)}`});
     }
     setIsSaving(false);
     setTimeout(() => setSaveMessage(null), 3000);
@@ -97,8 +105,7 @@ const Settings = () => {
         testedModel: res.model
       });
     } catch (error: unknown) {
-      const e = error as any;
-      setTestResult({ status: 'error', message: e?.response?.data?.detail || e.message });
+      setTestResult({ status: 'error', message: getErrorMsg(error) });
     }
     setIsTesting(false);
   };

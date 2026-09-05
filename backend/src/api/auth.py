@@ -1,4 +1,6 @@
-﻿import os
+import logging
+logger = logging.getLogger(__name__)
+import os
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -82,7 +84,7 @@ def signup(req: SignupRequest, response: Response, db: Session = Depends(get_db)
     except Exception as e:
         db.rollback()
         # Log actual error to backend console
-        print(f"Signup Database Error: {e}")
+        logger.exception(f"Signup Database Error: ")
         raise HTTPException(status_code=500, detail="Registration failed due to a server error")
 
     token = create_access_token(str(new_user.id), str(new_tenant.id), new_user.email)

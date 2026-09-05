@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 import pymongo
 from pymongo.errors import ConnectionFailure, OperationFailure
 from src.connectors.base import SourceConnector, PermissionReport, ConnectorStatus, EvidenceQuery, EvidenceChunk
