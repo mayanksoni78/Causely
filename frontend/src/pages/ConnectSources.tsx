@@ -56,10 +56,10 @@ const ConnectSources = () => {
   const [actionFeedback, setActionFeedback] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
 
-  const refreshData = () => {
+  const refreshData = async () => {
     setLoading(true);
     setPageError(null);
-    Promise.all([getSources(), getReadiness()]).then(([srcs, readys]) => {
+    return Promise.all([getSources(), getReadiness()]).then(([srcs, readys]) => {
       setSources(srcs);
       setReadiness(readys);
       setLoading(false);
@@ -95,26 +95,29 @@ const ConnectSources = () => {
       }
       
       await createSource(type, payload);
+      await refreshData();
       setShowModal(null);
       setAddIntegrationModal(false);
       setFormData({});
       setUploadProgress(0);
-      refreshData();
     } catch (error: unknown) {
       setSubmitError(getErrorMsg(error));
+    } finally {
+      setSubmitLoading(false);
     }
-    setSubmitLoading(false);
   };
 
   const handleDisconnect = async (id: string) => {
     setDeletingId(id);
     try {
       await deleteSource(id);
-      refreshData();
+      setSources(prev => prev.filter(s => s.id !== id));
+      getReadiness().then(setReadiness).catch(console.error);
     } catch (error: unknown) {
       setActionFeedback({ message: getErrorMsg(error), type: "error" });
+    } finally {
+      setDeletingId(null);
     }
-    setDeletingId(null);
   };
 
   const handleTestConnection = async (id: string) => {
