@@ -18,7 +18,7 @@ class LLMClient:
             
             if provider == "gemini":
                 from langchain_google_genai import ChatGoogleGenerativeAI
-                return ChatGoogleGenerativeAI(model=gemini_model, google_api_key=api_key)
+                return ChatGoogleGenerativeAI(model=gemini_model, google_api_key=api_key, max_retries=1)
             else:
                 from langchain_community.chat_models import ChatOllama
                 return ChatOllama(model=ollama_model, base_url=ollama_url)
@@ -36,7 +36,7 @@ class LLMClient:
             messages.append(SystemMessage(content=system))
         messages.append(HumanMessage(content=prompt))
         
-        res = llm.invoke(messages)
+        res = await llm.ainvoke(messages)
         content = res.content
         if isinstance(content, list):
             return content[0].get("text", "") if isinstance(content[0], dict) else str(content)

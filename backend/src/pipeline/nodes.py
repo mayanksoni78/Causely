@@ -125,26 +125,34 @@ async def retrieval_node(state: InvestigationState) -> InvestigationState:
         sources = db.query(DBSource).filter(DBSource.tenant_id == state["tenant_id"]).all()
         source_map = {str(s.id): s for s in sources}
         
+        import asyncio
+        
+        def fetch_sync(cid, connector):
+            try:
+                return cid, connector.fetch(query)
+            except Exception as e:
+                logger.exception(f"Error fetching from connector {cid}: ")
+                return cid, []
+
+        tasks = []
         for cid in state["source_plan"]["available"]:
             source = source_map.get(cid)
             if not source:
                 continue
             connector = _get_connector(source)
             if connector is None:
-                # E.g. static_log which is only available via indexer
                 continue
-                  
-            try:
-                fetched = connector.fetch(query)
+            tasks.append(asyncio.to_thread(fetch_sync, cid, connector))
+        
+        results = await asyncio.gather(*tasks)
+        for cid, fetched in results:
+            if fetched:
                 state["source_plan"]["queried"].append(cid)
                 for c in fetched:
-                    c.source_id = cid # Override the ID so we have the DB UUID
+                    c.source_id = cid
                     if c.id not in seen:
                         seen.add(c.id)
                         chunks.append(c)
-            except Exception as e:
-                logger.exception(f"Error fetching from connector {cid}: ")
-                pass
                 
         # Also query indexer (for previously ingested knowledge, e.g. static logs)
         indexed_chunks = indexer.retrieve(db, state["tenant_id"], state["project_id"], state["description"], source_ids=state["source_plan"]["available"])

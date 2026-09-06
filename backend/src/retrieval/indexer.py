@@ -39,7 +39,7 @@ class HierarchicalIndexer:
         db.commit()
         return count
 
-    def retrieve(self, db: Session, tenant_id: str, project_id: str, query: str, source_ids: list[str] | None = None, top_k: int = 20) -> list[EvidenceChunk]:
+    def retrieve(self, db: Session, tenant_id: str, project_id: str, query: str, source_ids: list[str] | None = None, top_k: int = 5) -> list[EvidenceChunk]:
         # Vector search using pgvector
         query_emb = embed_query(query)
         
@@ -54,7 +54,7 @@ class HierarchicalIndexer:
         q_all = db.query(DocumentChunk).filter(DocumentChunk.project_id == project_id)
         if source_ids:
             q_all = q_all.filter(DocumentChunk.source_id.in_(source_ids))
-        all_chunks = q_all.all()
+        all_chunks = q_all.limit(1000).all()
         
         if not all_chunks:
             return []
