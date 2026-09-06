@@ -1,4 +1,11 @@
 import logging
+
+import time
+def log_timing(step, start_time):
+    dur = time.time() - start_time
+    print(f"[INVESTIGATION] {step}: {dur:.2f}s", flush=True)
+
+
 logger = logging.getLogger(__name__)
 from datetime import datetime
 import json
