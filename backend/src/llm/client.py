@@ -26,8 +26,11 @@ class LLMClient:
             db.close()
 
     async def complete(self, prompt: str, system: str = "", tenant_id: str = None) -> str:
+        import asyncio
+        import logging
+        logger = logging.getLogger(__name__)
+        
         if not tenant_id:
-            # Fallback for generic test
             tenant_id = "00000000-0000-0000-0000-000000000000"
         
         llm = self._get_llm(tenant_id)
@@ -36,11 +39,28 @@ class LLMClient:
             messages.append(SystemMessage(content=system))
         messages.append(HumanMessage(content=prompt))
         
-        res = await llm.ainvoke(messages)
-        content = res.content
-        if isinstance(content, list):
-            return content[0].get("text", "") if isinstance(content[0], dict) else str(content)
-        return content
+        max_attempts = 3
+        base_delay = 2.0
+        
+        for attempt in range(max_attempts):
+            try:
+                res = await llm.ainvoke(messages)
+                content = res.content
+                if isinstance(content, list):
+                    return content[0].get("text", "") if isinstance(content[0], dict) else str(content)
+                return content
+            except Exception as e:
+                err_str = str(e).lower()
+                is_retryable = any(x in err_str for x in ["503", "504", "unavailable", "timeout", "too many requests", "429", "overloaded"])
+                
+                if is_retryable and attempt < max_attempts - 1:
+                    delay = base_delay * (2 ** attempt)
+                    logger.warning(f"LLM request failed (attempt {attempt+1}/{max_attempts}). Retrying in {delay}s. Error: {e}")
+                    await asyncio.sleep(delay)
+                    continue
+                
+                logger.error(f"LLM request failed permanently after {attempt+1} attempts. Error: {e}")
+                raise e
 
     async def complete_json(self, prompt: str, system: str = "", tenant_id: str = None) -> dict:
         content = await self.complete(prompt + "\n\nReturn ONLY a valid JSON object or array. Do not include markdown code blocks.", system, tenant_id)

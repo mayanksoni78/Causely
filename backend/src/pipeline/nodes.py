@@ -172,6 +172,63 @@ async def retrieval_node(state: InvestigationState) -> InvestigationState:
     state["trace"].append(StepTrace("retrieval", start, get_now(), {"query": query.__dict__}, {"chunk_count": len(chunks)}).to_dict()[0])
     return state
 
+
+async def temporal_correlation_node(state: InvestigationState) -> InvestigationState:
+    start = get_now()
+    import re
+    import datetime
+    
+    # Extract timestamps from retrieved chunks
+    pattern = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?'
+    timestamps = []
+    
+    for chunk in state.get("retrieved_chunks", []):
+        matches = re.findall(pattern, chunk.content)
+        for m in matches:
+            try:
+                clean = m.replace('Z', '+00:00')
+                if clean.endswith('Z'): clean = clean[:-1] + '+00:00'
+                dt = datetime.datetime.fromisoformat(clean)
+                timestamps.append(dt)
+            except Exception:
+                pass
+                
+    if timestamps:
+        t_min = min(timestamps)
+        t_max = max(timestamps)
+        
+        # Extend window back by 1 hour to catch preceding commits
+        window_start = t_min - datetime.timedelta(hours=1)
+        window_end = t_max + datetime.timedelta(minutes=5)
+        
+        # Look for a Github connector in available sources
+        gh_connector = None
+        from src.connectors.registry import get_connector
+        from src.core.database import SessionLocal
+        from src.models.domain import ConnectorSource
+        
+        db = SessionLocal()
+        try:
+            for cid in state["source_plan"].get("available", []):
+                source = db.query(ConnectorSource).filter(ConnectorSource.id == cid).first()
+                if source and source.connector_type == "github":
+                    gh_connector = get_connector(source)
+                    gh_connector.connector_id = cid
+                    break
+        finally:
+            db.close()
+            
+        if gh_connector and hasattr(gh_connector, "get_commits_in_window"):
+            commit_chunks = gh_connector.get_commits_in_window(window_start, window_end)
+            if commit_chunks:
+                # Add to retrieved chunks
+                state["retrieved_chunks"].extend(commit_chunks)
+                state["trace"].append(StepTrace("temporal_correlation", start, get_now(), {"window": f"{window_start} to {window_end}"}, {"commits_found": len(commit_chunks)}).to_dict()[0])
+                return state
+
+    state["trace"].append(StepTrace("temporal_correlation", start, get_now(), {}, {"commits_found": 0}).to_dict()[0])
+    return state
+
 async def reranking_node(state: InvestigationState) -> InvestigationState:
     start = get_now()
     reranked = rerank(state["description"], state["retrieved_chunks"])
@@ -196,7 +253,9 @@ async def timeline_node(state: InvestigationState) -> InvestigationState:
         timeline = await llm.complete_json(prompt, tenant_id=state["tenant_id"])
         if not isinstance(timeline, list):
             timeline = [timeline]
-    except Exception:
+    except Exception as e:
+        logger.exception("Timeline generation failed")
+        state["timeline_error"] = str(e)
         timeline = []
         
     state["timeline"] = timeline
@@ -217,7 +276,9 @@ async def hypothesis_generation_node(state: InvestigationState) -> Investigation
         hypotheses = await llm.complete_json(prompt, tenant_id=state["tenant_id"])
         if not isinstance(hypotheses, list):
             hypotheses = [hypotheses]
-    except Exception:
+    except Exception as e:
+        logger.exception("Hypothesis generation failed")
+        state["hypothesis_error"] = str(e)
         hypotheses = []
         
     state["hypotheses"] = hypotheses
@@ -227,56 +288,70 @@ async def hypothesis_generation_node(state: InvestigationState) -> Investigation
 async def evidence_verification_node(state: InvestigationState) -> InvestigationState:
     start = get_now()
     verified = []
-    chunk_map = {c.id: c for c in state["reranked_chunks"]}
+    chunk_map = {str(c.id).strip(): c for c in state.get("reranked_chunks", [])}
     
-    for hyp in state["hypotheses"]:
-        valid_evidence = [eid for eid in hyp.get("evidence_ids", []) if eid in chunk_map]
-        contradictions = [eid for eid in hyp.get("contradiction_ids", []) if eid in chunk_map]
+    for hyp in state.get("hypotheses", []):
+        raw_evidence_ids = [str(eid).strip() for eid in hyp.get("evidence_ids", [])]
+        raw_contradiction_ids = [str(eid).strip() for eid in hyp.get("contradiction_ids", [])]
         
-        # Count independent sources
+        valid_evidence = [eid for eid in raw_evidence_ids if eid in chunk_map]
+        invalid_evidence = [eid for eid in raw_evidence_ids if eid not in chunk_map]
+        contradictions = [eid for eid in raw_contradiction_ids if eid in chunk_map]
+        
         sources = set()
         for eid in valid_evidence:
-            c = chunk_map[eid]
-            sources.add(c.connector_type)
+            sources.add(chunk_map[eid].connector_type)
             
         corroboration_count = len(sources)
         
-        # Temporal check logic (basic heuristic: if we have timeline, is the hypothesis strictly after the first error?)
-        # For a true strict check we'd parse timestamps, but we rely on LLM reasoning and contradiction evidence here
-        is_verified = corroboration_count >= 1 and len(valid_evidence) > len(contradictions)
+        is_verified = bool(len(valid_evidence) > 0 and len(valid_evidence) > len(contradictions))
         
         hyp["verified"] = is_verified
         hyp["corroboration_count"] = corroboration_count
         hyp["contradiction_ids"] = contradictions
         hyp["valid_evidence_ids"] = valid_evidence
+        hyp["invalid_evidence_ids"] = invalid_evidence
         verified.append(hyp)
         
     state["verified_hypotheses"] = verified
-    state["trace"].append(StepTrace("evidence_verification", start, get_now(), {}, {"verified_count": len([h for h in verified if h["verified"]])}).to_dict()[0])
+    state["trace"].append(StepTrace("evidence_verification", start, get_now(), {}, {"verified_count": sum(1 for h in verified if h["verified"])}).to_dict()[0])
     return state
+
+import math
+def normalize_score(score):
+    return 1.0 / (1.0 + math.exp(-score))
 
 async def confidence_scoring_node(state: InvestigationState) -> InvestigationState:
     start = get_now()
-    if not state["verified_hypotheses"]:
-        state["confidence"] = {"score": 0, "bucket": "Insufficient", "breakdown": {}}
+    
+    verified_hyps = [h for h in state.get("verified_hypotheses", []) if h.get("verified")]
+    if not verified_hyps:
+        state["confidence"] = {"score": 0.0, "bucket": "Insufficient", "breakdown": {}}
+        state["trace"].append(StepTrace("confidence_scoring", start, get_now(), {}, state["confidence"]).to_dict()[0])
         return state
         
-    best_hyp = max(state["verified_hypotheses"], key=lambda h: h["corroboration_count"])
-    chunk_map = {c.id: c for c in state["reranked_chunks"]}
+    best_hyp = max(verified_hyps, key=lambda h: (h.get("corroboration_count", 0), len(h.get("valid_evidence_ids", []))))
+    chunk_map = {str(c.id).strip(): c for c in state.get("reranked_chunks", [])}
     
-    valid_ev = [chunk_map[eid] for eid in best_hyp.get("valid_evidence_ids", [])]
-    retrieval_score = sum(c.relevance_score for c in valid_ev) / len(valid_ev) if valid_ev else 0.0
+    valid_ev = [chunk_map[eid] for eid in best_hyp.get("valid_evidence_ids", []) if eid in chunk_map]
+    if valid_ev:
+        raw_retrieval_score = sum(c.relevance_score for c in valid_ev) / len(valid_ev)
+        retrieval_score = normalize_score(raw_retrieval_score)
+    else:
+        retrieval_score = 0.0
     
-    corroboration_score = min(1.0, best_hyp["corroboration_count"] / 3.0)
+    corroboration_score = min(1.0, best_hyp.get("corroboration_count", 0) / 2.0)
     
-    avail = len(state["source_plan"]["available"])
-    coverage_score = len(state["source_plan"]["queried"]) / avail if avail > 0 else 0.0
+    # Coverage calculation (exclude indexer)
+    avail_ext = [cid for cid in state["source_plan"].get("available", []) if cid != "indexer"]
+    queried_ext = [cid for cid in state["source_plan"].get("queried", []) if cid != "indexer"]
+    coverage_score = len(queried_ext) / len(avail_ext) if len(avail_ext) > 0 else 1.0
     
-    recency_score = 1.0 # Simplified for now
-    contradiction_penalty = -0.3 if best_hyp["contradiction_ids"] else 0.0
+    recency_score = 1.0
+    contradiction_penalty = -0.3 if best_hyp.get("contradiction_ids") else 0.0
     
-    final_score = (retrieval_score * 0.3 + corroboration_score * 0.35 + coverage_score * 0.2 + recency_score * 0.15) + contradiction_penalty
-    final_score = max(0.0, min(1.0, final_score)) # Clamp between 0 and 1
+    final_score = (retrieval_score * 0.4 + corroboration_score * 0.3 + coverage_score * 0.2 + recency_score * 0.1) + contradiction_penalty
+    final_score = max(0.0, min(1.0, final_score))
     
     if final_score >= 0.85: bucket = "High"
     elif final_score >= 0.60: bucket = "Medium"
@@ -291,7 +366,7 @@ async def confidence_scoring_node(state: InvestigationState) -> InvestigationSta
         "contradiction_penalty": contradiction_penalty
     }
     
-    state["confidence"] = {"score": final_score, "bucket": bucket, "breakdown": breakdown}
+    state["confidence"] = {"score": round(final_score, 2), "bucket": bucket, "breakdown": breakdown}
     state["trace"].append(StepTrace("confidence_scoring", start, get_now(), {}, state["confidence"]).to_dict()[0])
     return state
 
@@ -326,8 +401,17 @@ async def synthesis_node(state: InvestigationState) -> InvestigationState:
     try:
         report = await llm.complete(prompt, tenant_id=state["tenant_id"])
     except Exception as e:
-        report = f"Failed to synthesize report: {e}"
-        
+        logger.exception("Synthesis failed due to LLM error")
+        err_str = str(e).lower()
+        if any(x in err_str for x in ["503", "504", "unavailable", "timeout", "too many requests", "429", "overloaded"]):
+            report = "Temporarily unavailable — Gemini service is currently unavailable.\n\nThe investigation evidence and findings are still available."
+        elif any(x in err_str for x in ["401", "403", "api_key", "unauthorized", "forbidden"]):
+            report = "AI report unavailable: Invalid LLM configuration or Authentication Failed."
+        elif "400" in err_str:
+            report = "AI report unavailable: Invalid request format."
+        else:
+            report = "AI report temporarily unavailable due to a service error.\n\nThe investigation evidence and findings are still available."
+            
     state["final_report"] = {"report": report}
     state["trace"].append(StepTrace("synthesis", start, get_now(), {}, {}).to_dict()[0])
     return state

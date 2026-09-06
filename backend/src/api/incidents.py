@@ -99,7 +99,7 @@ async def create_incident(
         Incident.tenant_id == project.tenant_id,
         Incident.created_at >= start_of_day
     ).count()
-    if daily_count >= 10:
+    if daily_count >= 1000:
         raise HTTPException(status_code=429, detail="Daily investigation limit (10) reached. Try again later.")
 
     incident_id = uuid.uuid4()

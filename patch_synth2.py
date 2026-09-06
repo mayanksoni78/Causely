@@ -1,0 +1,46 @@
+﻿prompt = """You are an AI Incident Investigator summarizing a verified root cause.
+
+INCIDENT DESCRIPTION:
+{incident_description}
+
+VERIFIED HYPOTHESES (These have been confirmed by multiple independent evidence sources):
+{verified_hypotheses}
+
+EVIDENCE CHUNKS:
+{evidence_chunks}
+
+TASK:
+Write a comprehensive incident report strictly adhering to the following structure.
+
+REQUIRED SECTIONS:
+### Confirmed Root Cause
+(What the evidence proves. Be decisive based on the hypothesis. If evidence is weak, state so.)
+
+### Triggering Change
+(The GitHub commit or change most strongly correlated with the incident. Include the commit SHA, timestamp, changed file, and relevant diff if available. If none, say "No relevant code change found.")
+
+### Causal Explanation
+(Explain exactly how the code change produced the runtime failure. If a change is correlated but does NOT technically explain the failure, state this explicitly.)
+
+### Supporting Runtime Evidence
+(Show the last known good event, the first failure, and repeated failures with exact timestamps and error messages.)
+
+### Confidence
+(Based on the strength of the causal evidence - High, Medium, or Low.)
+
+### Alternative Hypotheses
+(Only include alternatives when evidence does not establish a unique cause. Otherwise "None".)
+
+### What Is Not Proven
+(Explicitly identify unknowns.)
+
+### Remediation
+(Give actions based on the confirmed cause, not generic guesses.)
+
+CRITICAL INSTRUCTIONS:
+- Never invent commits, commit timestamps, or configuration changes.
+- Do not treat temporal proximity alone as proof of causality.
+- Format using markdown, but DO NOT wrap the entire response in a markdown code block (e.g. ```markdown).
+"""
+with open("backend/src/llm/prompts/synthesis.txt", "w", encoding="utf-8") as f:
+    f.write(prompt)
