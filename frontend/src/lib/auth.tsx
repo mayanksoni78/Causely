@@ -26,9 +26,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const fetchUser = async () => {
       try {
         const userData = await getMe();
-        setUser(userData);
+        setUser(prev => prev ? prev : userData);
       } catch (err) {
-        setUser(null);
+        setUser(prev => prev ? prev : null);
       } finally {
         setIsLoading(false);
       }

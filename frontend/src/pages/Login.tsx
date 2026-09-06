@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Activity, Eye, EyeOff, AlertCircle,
   UserPlus, LogIn,
@@ -9,7 +10,7 @@ import { useAuth } from '../lib/auth';
 
 type Tab = 'login' | 'signup';
 
-/* ── Password strength ───────────────────────────────────── */
+/* "?"? Password strength "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"? */
 function getStrength(pwd: string) {
   if (!pwd) return null;
   if (pwd.length < 6) return { label: 'Too short', pct: 15, color: '#ef4444' };
@@ -21,7 +22,7 @@ function getStrength(pwd: string) {
   return { label: 'Weak', pct: 40, color: '#f59e0b' };
 }
 
-/* ── Reusable password input ─────────────────────────────── */
+/* "?"? Reusable password input "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"? */
 function PasswordInput({
   id, value, onChange, placeholder, autoComplete
 }: {
@@ -38,7 +39,7 @@ function PasswordInput({
         type={show ? 'text' : 'password'}
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder={placeholder ?? '••••••••'}
+        placeholder={placeholder ?? '????????'}
         required
         autoComplete={autoComplete}
       />
@@ -54,11 +55,12 @@ function PasswordInput({
   );
 }
 
-/* ── Main component ──────────────────────────────────────── */
+/* "?"? Main component "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"? */
 const LoginPage = () => {
-  const { user, login, signup, isLoading } = useAuth();
+  const { user, login, signup } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('login');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
@@ -82,76 +84,84 @@ const LoginPage = () => {
 
   const switchTab = (t: Tab) => { setTab(t); setError(null); };
 
-
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError(null);
+    setIsSubmitting(true);
     try {
       await login(lEmail, lPwd);
       navigate('/', { replace: true });
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || err?.message || 'Login failed';
+    } catch (err: unknown) {
+      let msg = 'Login failed';
+      if (axios.isAxiosError(err)) {
+        msg = err.response?.data?.detail || err.message;
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
       setError(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError(null);
     if (sPwd !== sConfirm) { setError('Passwords do not match'); return; }
     if (sPwd.length < 6) { setError('Password must be at least 6 characters'); return; }
+    
+    setIsSubmitting(true);
     try {
       await signup({ name: sName, email: sEmail, password: sPwd, confirm_password: sConfirm });
       navigate('/', { replace: true });
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || err?.message || 'Sign up failed';
+    } catch (err: unknown) {
+      let msg = 'Sign up failed';
+      if (axios.isAxiosError(err)) {
+        msg = err.response?.data?.detail || err.message;
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
       setError(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="auth-root">
 
-      {/* ════ LEFT — Branding ════ */}
+      {/*  ? ? ? ? LEFT ?" Branding  ? ? ? ? */}
       <div className="auth-brand">
         {/* Decorative orbs */}
         <div className="auth-orb auth-orb-1" />
         <div className="auth-orb auth-orb-2" />
-
-        <div className="auth-brand-inner">
-          {/* Logo */}
-          <div className="auth-logo">
-            <div className="auth-logo-icon">
-              <Activity size={22} color="var(--accent)" />
-            </div>
-            <span className="auth-logo-text">Causely</span>
+        
+        <div className="auth-brand-content">
+          <div className="auth-logo-wrap">
+            <div className="auth-logo"><Activity size={24} color="#e2e8f0" /></div>
+            <h2>Causely</h2>
           </div>
-
-          {/* Headline */}
-          <h1 className="auth-headline">
-            Evidence&#8209;driven<br />root cause analysis
-          </h1>
-          <p className="auth-tagline" style={{ maxWidth: '400px', fontSize: '1.05rem', color: '#cbd5e1' }}>
-            Every conclusion is backed by verified, cited evidence — or the system says <span className="auth-quote" style={{ color: '#06b6d4' }}>"Insufficient evidence"</span> rather than guessing.
+          <h1>AI Incident Investigator</h1>
+          <p>
+            Connect your codebase, logs, and databases. We'll automatically identify root causes 
+            for production incidents with cited evidence.
           </p>
-
         </div>
       </div>
 
-      {/* ════ RIGHT — Form ════ */}
+      {/*  ? ? ? ? RIGHT ?" Form  ? ? ? ? */}
       <div className="auth-form-side">
         <div className="auth-card">
+          <div className="auth-header">
+            <h3>{tab === 'login' ? 'Welcome back' : 'Create an account'}</h3>
+            <p>{tab === 'login' ? 'Sign in to your workspace' : 'Start investigating incidents'}</p>
+          </div>
 
-
-
-          {/* ── LOGIN ── */}
+          {/* ----- LOGIN TAB ----- */}
           {tab === 'login' && (
-            <form onSubmit={handleLogin} noValidate>
-              <p className="auth-form-sub">Sign in to your workspace</p>
-
-
-
+            <form onSubmit={handleLogin} className="auth-form">
               <div className="input-group">
                 <label className="input-label" htmlFor="l-email">Email address</label>
                 <input
@@ -167,7 +177,9 @@ const LoginPage = () => {
               </div>
 
               <div className="input-group" style={{ marginBottom: 0 }}>
-                <label className="input-label" htmlFor="l-pwd">Password</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <label className="input-label" htmlFor="l-pwd">Password</label>
+                </div>
                 <PasswordInput
                   id="l-pwd" value={lPwd}
                   onChange={setLPwd}
@@ -177,26 +189,24 @@ const LoginPage = () => {
 
               {error && <div className="auth-error"><AlertCircle size={14} />{error}</div>}
 
-              <button type="submit" className="auth-submit" disabled={isLoading}>
-                {isLoading
+              <button type="submit" className="auth-submit" disabled={isSubmitting}>
+                {isSubmitting
                   ? <span className="auth-spinner" />
                   : <><LogIn size={15} />Sign In</>}
               </button>
 
               <p className="auth-switch">
-                No account?{' '}
+                Don't have an account?{' '}
                 <button type="button" className="auth-link" onClick={() => switchTab('signup')}>
-                  Create one free →
+                  Sign up +'
                 </button>
               </p>
             </form>
           )}
 
-          {/* ── SIGNUP ── */}
+          {/* ----- SIGNUP TAB ----- */}
           {tab === 'signup' && (
-            <form onSubmit={handleSignup} noValidate>
-              <p className="auth-form-sub">Create your free workspace</p>
-
+            <form onSubmit={handleSignup} className="auth-form">
               <div className="input-group">
                 <label className="input-label" htmlFor="s-name">Full name</label>
                 <input
@@ -205,7 +215,7 @@ const LoginPage = () => {
                   type="text"
                   value={sName}
                   onChange={e => setSName(e.target.value)}
-                  placeholder="Jane Smith"
+                  placeholder="Jane Doe"
                   required
                   autoComplete="name"
                 />
@@ -270,8 +280,8 @@ const LoginPage = () => {
 
               {error && <div className="auth-error"><AlertCircle size={14} />{error}</div>}
 
-              <button type="submit" className="auth-submit" disabled={isLoading || pwdMismatch}>
-                {isLoading
+              <button type="submit" className="auth-submit" disabled={isSubmitting || pwdMismatch}>
+                {isSubmitting
                   ? <span className="auth-spinner" />
                   : <><UserPlus size={15} />Create Account</>}
               </button>
@@ -279,7 +289,7 @@ const LoginPage = () => {
               <p className="auth-switch">
                 Already have an account?{' '}
                 <button type="button" className="auth-link" onClick={() => switchTab('login')}>
-                  Sign in →
+                  Sign in +'
                 </button>
               </p>
             </form>
@@ -288,7 +298,7 @@ const LoginPage = () => {
 
         {/* Footer */}
         <p className="auth-footer">
-          Zero cost · Local ML models · Read-only data connectors
+          Zero cost • Local ML models • Read-only data connectors
         </p>
       </div>
     </div>
